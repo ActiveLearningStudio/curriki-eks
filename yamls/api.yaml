@@ -1,0 +1,108 @@
+---
+  apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      app: api
+    labels:
+      io.kompose.service: currikidev-api
+    name: currikidev-api
+  spec:
+    type: ClusterIP
+    ports:
+    - name: "8000"
+      port: 8000
+      targetPort: 8000
+    selector:
+      io.kompose.service: currikidev-api
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    io.kompose.service: currikidev-api
+    app: api
+  name: currikidev-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: currikidev-api
+  strategy: {}
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: kompose convert -f docker-compose.k8s.yml -o yamls/
+        kompose.version: 1.21.0 ()
+      creationTimestamp: null
+      labels:
+        io.kompose.network/currikidev-laravel: "true"
+        io.kompose.service: currikidev-api
+    spec:
+      containers:
+      - image: curriki/api:test2.0.0
+        imagePullPolicy: Always
+        name: currikidev-api
+        envFrom:
+          - secretRef:
+              name: currikidev-api-env
+        ports:
+        - containerPort: 8000
+        volumeMounts:
+          - mountPath: /var/www/html/storage
+            name: currikidev-api-storage
+            readOnly: false
+          - mountPath: /var/www/html/env
+            name: "currikidev-api-env"
+            readOnly: true
+        resources: {}
+      restartPolicy: Always
+      serviceAccountName: ""
+      volumes:
+        - name: currikidev-api-storage
+          persistentVolumeClaim:
+            claimName: currikidev-api-storage
+        - name: "currikidev-api-env"
+          secret:
+            secretName: "currikidev-api-env"
+
+
+---
+kind: StorageClass
+apiVersion: storage.k8s.io/v1
+metadata:
+  name: efs-sc
+provisioner: efs.csi.aws.com
+
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: laravel-storage-efs-pv
+spec:
+  capacity:
+    storage: 500Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: efs-sc
+  csi:
+    driver: efs.csi.aws.com
+    volumeHandle: fs-abcdefghi
+  
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: currikidev-api-storage
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: efs-sc
+  resources:
+    requests:
+      storage: 500Gi
+---
