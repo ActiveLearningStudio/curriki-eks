@@ -1,6 +1,6 @@
 # AWS Stack
 
-![](images/EKS-CloudFormationDiagram.png)
+![](../images/EKS-CloudFormationDiagram.png)
 
 # Deploying to kubernetes.
 
