@@ -1,0 +1,221 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'EKS Cluster and Managed Nodes'
+Parameters:
+  VpcCidrBlock:
+    Type: String
+    Description: CIDR Block for VPC
+    Default: 10.0.0.0/16
+  PublicSubnetCidrBlockA:
+    Type: String
+    Description: CIDR Block for Public Subnet
+    Default: 10.0.0.0/19
+  PublicSubnetCidrBlockB:
+    Type: String
+    Description: CIDR Block for Public Subnet
+    Default: 10.0.32.0/19
+  PublicSubnetCidrBlockC:
+    Type: String
+    Description: CIDR Block for Public Subnet
+    Default: 10.0.64.0/19
+  PublicSubnetCidrBlockD:
+    Type: String
+    Description: CIDR Block for Public Subnet
+    Default: 10.0.96.0/19
+  PrivateSubnetCidrBlockA:
+    Type: String
+    Description: CIDR Block for Private Subnet
+    Default: 10.0.128.0/19
+  PrivateSubnetCidrBlockB:
+    Type: String
+    Description: CIDR Block for Private Subnet
+    Default: 10.0.160.0/19
+  PrivateSubnetCidrBlockC:
+    Type: String
+    Description: CIDR Block for Private Subnet
+    Default: 10.0.192.0/19
+  PrivateSubnetCidrBlockD:
+    Type: String
+    Description: CIDR Block for Private Subnet
+    Default: 10.0.224.0/19
+  ClusterName: 
+    Type: String
+    Description: Name of your managed EKS Cluster
+  EksVersion:
+    Type: String
+    Description: EKS Version
+  ClusterName: 
+    Type: String
+    Description: Name of your managed EKS Cluster
+  EbsDiskSize:
+    Type: Number
+    Description: Size of EBS Volume to be attached with worker nodes
+  InstanceType:
+    Type: String
+    Description: Instance type for worker nodes
+    ConstraintDescription: Must be a valid EC2 Instance Type
+    AllowedValues:
+      - t1.micro
+      - t2.nano
+      - t2.micro
+      - t2.small
+      - t2.medium
+      - t2.large
+      - m1.small
+      - m1.medium
+      - m1.large
+      - m1.xlarge
+      - m2.xlarge
+      - m2.2xlarge
+      - m2.4xlarge
+      - m3.medium
+      - m3.large
+      - m3.xlarge
+      - m3.2xlarge
+      - m4.large
+      - m4.xlarge
+      - m4.2xlarge
+      - m4.4xlarge
+      - m4.10xlarge
+      - c1.medium
+      - c1.xlarge
+      - c3.large
+      - c3.xlarge
+      - c3.2xlarge
+      - c3.4xlarge
+      - c3.8xlarge
+      - c4.large
+      - c4.xlarge
+      - c4.2xlarge
+      - c4.4xlarge
+      - c4.8xlarge
+      - g2.2xlarge
+      - g2.8xlarge
+      - r3.large
+      - r3.xlarge
+      - r3.2xlarge
+      - r3.4xlarge
+      - r3.8xlarge
+      - i2.xlarge
+      - i2.2xlarge
+      - i2.4xlarge
+      - i2.8xlarge
+      - d2.xlarge
+      - d2.2xlarge
+      - d2.4xlarge
+      - d2.8xlarge
+      - hi1.4xlarge
+      - hs1.8xlarge
+      - cr1.8xlarge
+      - cc2.8xlarge
+      - cg1.4xlarge
+  SSHKeyPair:
+    Description: Ec2 Keypair Name
+    Type: AWS::EC2::KeyPair::KeyName
+  MinWorkerNodes:
+    Type: Number
+    Description: Minimum no. of Worker nodes in EKS Cluster
+  MaxWorkerNodes:
+    Type: Number
+    Description: Maximum no. of Worker nodes in EKS Cluster
+  DesiredWorkerNodes:
+    Type: Number
+    Description: Desired no. of Worker nodes in EKS Cluster
+  AmiId:
+    Type: AWS::SSM::Parameter::Value<String>
+    Description: ParameterStore name of the Parameter containing Ubuntu AMI
+    Default: /aws/service/canonical/ubuntu/server/20.04/stable/current/amd64/hvm/ebs-gp2/ami-id
+  AwsAccessKeyId:
+    Type: String
+    Description: AWS Access Key ID
+    NoEcho: "true"
+  AwsSecretAccessKey:
+    Type: String
+    Description: AWS Secret Access Key
+    NoEcho: "true"
+  DatabaseInstanceType: 
+    AllowedValues: 
+      - db.t2.micro
+      - db.t2.small
+      - db.r3.large
+      - db.r3.xlarge
+      - db.r3.2xlarge
+      - db.r3.4xlarge
+      - db.r3.8xlarge
+    Default: db.t2.micro
+    Description: "The instance type to use for the database."
+    Type: String
+  DatabasePassword: 
+    Description: "The database admin account password."
+    MaxLength: "41"
+    MinLength: "8"
+    NoEcho: "true"
+    Type: String
+  DatabaseUsername: 
+    AllowedPattern: "[a-zA-Z0-9]+"
+    ConstraintDescription: "must contain only alphanumeric characters."
+    Default: awsmaster
+    Description: "The database admin account user name."
+    MaxLength: "16"
+    MinLength: "1"
+    Type: String
+  MultiAZ: 
+    AllowedValues: 
+      - true
+      - false
+    Description: "Multi AZ setup for database"
+    Type: String
+  PGVersion: 
+    Default: "9.6"
+    Description: "PostgreSQL Version"
+    Type: String
+Resources:
+  EksCluster:
+    Type: AWS::CloudFormation::Stack
+    Properties: 
+      Parameters:
+        ClusterName: !Ref ClusterName
+        EksVersion: !Ref EksVersion
+        VpcCidrBlock: !Ref VpcCidrBlock
+        PublicSubnetCidrBlockA: !Ref PublicSubnetCidrBlockA
+        PublicSubnetCidrBlockB: !Ref PublicSubnetCidrBlockB
+        PublicSubnetCidrBlockC: !Ref PublicSubnetCidrBlockC
+        PublicSubnetCidrBlockD: !Ref PublicSubnetCidrBlockD
+        PrivateSubnetCidrBlockA: !Ref PrivateSubnetCidrBlockA
+        PrivateSubnetCidrBlockB: !Ref PrivateSubnetCidrBlockB
+        PrivateSubnetCidrBlockC: !Ref PrivateSubnetCidrBlockC
+        PrivateSubnetCidrBlockD: !Ref PrivateSubnetCidrBlockD
+      TemplateURL: https://curriki-nested-cft.s3.us-east-2.amazonaws.com/eks-cluster.yml
+  EksNodeGroup:
+    DependsOn: EksCluster
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      Parameters:
+        ClusterName: !Ref ClusterName
+        EbsDiskSize: !Ref EbsDiskSize
+        InstanceType: !Ref InstanceType
+        SSHKeyPair: !Ref SSHKeyPair
+        MinWorkerNodes: !Ref MinWorkerNodes
+        MaxWorkerNodes: !Ref MaxWorkerNodes
+        DesiredWorkerNodes: !Ref DesiredWorkerNodes
+        PublicSubnets: !GetAtt EksCluster.Outputs.SubnetsPublic
+      TemplateURL: https://curriki-nested-cft.s3.us-east-2.amazonaws.com/eks-nodegroup.yml
+  EksDeployment:
+    DependsOn: EksNodeGroup
+    Type: AWS::CloudFormation::Stack
+    Properties: 
+      Parameters:
+        PublicSubnetId: !Select [0, !Split [',', !GetAtt EksCluster.Outputs.SubnetsPublic]]
+        SSHKeyPair: !Ref SSHKeyPair
+        VpcId: !GetAtt EksCluster.Outputs.VPC
+        ClusterName: !Ref ClusterName
+        AwsAccessKeyId: !Ref AwsAccessKeyId
+        AwsSecretAccessKey: !Ref AwsSecretAccessKey
+        DatabaseInstanceType: !Ref DatabaseInstanceType
+        DatabasePassword: !Ref DatabasePassword
+        DatabaseUsername: !Ref DatabaseUsername
+        MultiAZ: !Ref MultiAZ
+        PGVersion: !Ref PGVersion
+        PrivateSubnets: !GetAtt EksCluster.Outputs.SubnetsPrivate
+        VpcCidrBlock: !Ref VpcCidrBlock
+      TemplateURL: https://curriki-nested-cft.s3.us-east-2.amazonaws.com/eks-deployment.yml
+      

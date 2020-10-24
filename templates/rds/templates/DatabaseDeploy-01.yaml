@@ -1,0 +1,86 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'AWS CloudFormation Sample Template RDS_with_DBParameterGroup: Sample
+  template showing how to create an Amazon RDS Database Instance with a DBParameterGroup.**WARNING**
+  This template creates an Amazon Relational Database Service database instance. You
+  will be billed for the AWS resources used if you create a stack from this template.'
+Parameters:
+  MyVPC:
+    Type: AWS::EC2::VPC::Id
+  DBSubnet1:
+    Type: AWS::EC2::Subnet::Id
+  DBSubnet2:
+    Type: AWS::EC2::Subnet::Id
+  DBSubnet3:
+    Type: AWS::EC2::Subnet::Id
+Resources:
+  MyDB:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      DBName: curriki
+      AllocatedStorage: '5'
+      VPCSecurityGroups:
+      - Ref: DBSecurityGroup
+      DBInstanceClass: db.t3.xlarge
+      DBSubnetGroupName:
+        Ref: DBSubnetGroup
+      Engine: postgres
+      EngineVersion: '11.2'
+      MasterUsername:
+        Fn::Sub: "{{resolve:secretsmanager:${MyRDSInstanceRotationSecret}::username}}"
+      MasterUserPassword:
+        Fn::Sub: "{{resolve:secretsmanager:${MyRDSInstanceRotationSecret}::password}}"
+      DBParameterGroupName:
+        Ref: MyRDSParamGroup
+  DBSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Group for RDS Instance
+      VpcId:
+        Ref: MyVPC
+      SecurityGroupIngress:
+      - IpProtocol: tcp
+        FromPort: 5432
+        ToPort: 5432
+        CidrIp: 10.0.0.0/16
+  DBSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: Private VPC Group
+      DBSubnetGroupName: PrivateVPCSubnetGroup
+      SubnetIds:
+      - Ref: DBSubnet1
+      - Ref: DBSubnet2
+      - Ref: DBSubnet3
+  SecretRDSInstanceAttachment:
+    Type: AWS::SecretsManager::SecretTargetAttachment
+    Properties:
+      SecretId:
+        Ref: MyRDSInstanceRotationSecret
+      TargetId:
+        Ref: MyDB
+      TargetType: AWS::RDS::DBInstance
+  MyRDSParamGroup:
+    Type: AWS::RDS::DBParameterGroup
+    Properties:
+      Family: postgres11
+      Description: CloudFormation Sample Database Parameter Group
+  MyRDSInstanceRotationSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Description: This is my rds instance secret
+      Name: CurrikiStudioRDSCredentials
+      GenerateSecretString:
+        SecretStringTemplate: '{"username": "curriki"}'
+        GenerateStringKey: password
+        PasswordLength: 16
+        ExcludeCharacters: "\"@/\\"
+Outputs:
+  EndpointURL:
+    Description: EndpointURL
+    Value:
+      Fn::GetAtt:
+      - MyDB
+      - Endpoint.Address
+    Export:
+      Name: DatabaseEndpointURL
