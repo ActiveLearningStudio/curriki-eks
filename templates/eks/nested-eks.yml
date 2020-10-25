@@ -246,7 +246,6 @@ Resources:
       Parameters:
         MyVPC: !GetAtt EksCluster.Outputs.VPC
         PrivateSubnets: !GetAtt EksCluster.Outputs.SubnetsPrivate
-        AmiId: !Ref AmiId
         # DBSubnet1:
         #   Ref: Subnet1
         # DBSubnet2:
