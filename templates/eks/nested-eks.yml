@@ -58,9 +58,9 @@ Parameters:
   EksVersion:
     Type: String
     Description: EKS Version
-    AllowedValues:
-      - 1.17
-      - 1.18
+    # AllowedValues:
+    #   - "1.17"
+    #   - "1.18"
   EbsDiskSize:
     Type: Number
     Description: Size of EBS Volume to be attached with worker nodes
@@ -199,7 +199,10 @@ Resources:
         PrivateSubnetCidrBlockB: !Ref PrivateSubnetCidrBlockB
         PrivateSubnetCidrBlockC: !Ref PrivateSubnetCidrBlockC
         PrivateSubnetCidrBlockD: !Ref PrivateSubnetCidrBlockD
-        AvailabilityZones: !Ref AvailabilityZones
+        AvailabilityZones: 
+          !Join
+            - ','
+            - !Ref AvailabilityZones
         NumberOfAZs: !Ref NumberOfAZs
       TemplateURL: https://studio-eks.s3.amazonaws.com/templates/eks/components/eks-cluster-01.yml
   EksNodeGroup:
@@ -242,12 +245,14 @@ Resources:
       TimeoutInMinutes: 60
       Parameters:
         MyVPC: !GetAtt EksCluster.Outputs.VPC
-        DBSubnet1:
-          Ref: Subnet1
-        DBSubnet2:
-          Ref: Subnet2
-        DBSubnet3:
-          Ref: Subnet3
+        PrivateSubnets: !GetAtt EksCluster.Outputs.SubnetsPrivate
+        AmiId: !Ref AmiId
+        # DBSubnet1:
+        #   Ref: Subnet1
+        # DBSubnet2:
+        #   Ref: Subnet2
+        # DBSubnet3:
+        #   Ref: Subnet3
   LambdaRoleStack:
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -264,12 +269,13 @@ Resources:
           - LambdaRoleStack
           - Outputs.LambdaRole
         MyVPC: !GetAtt EksCluster.Outputs.VPC
-        DBSubnet1:
-          Ref: Subnet1
-        DBSubnet2:
-          Ref: Subnet2
-        DBSubnet3:
-          Ref: Subnet3
+        PrivateSubnets: !GetAtt EksCluster.Outputs.SubnetsPrivate
+        # DBSubnet1:
+        #   Ref: Subnet1
+        # DBSubnet2:
+        #   Ref: Subnet2
+        # DBSubnet3:
+        #   Ref: Subnet3
   DBDataLoad:
     Type: AWS::CloudFormation::Stack
     Properties:
