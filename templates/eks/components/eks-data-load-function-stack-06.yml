@@ -5,20 +5,23 @@ Parameters:
     Type: String
   MyVPC:
     Type: AWS::EC2::VPC::Id
-  DBSubnet1:
-    Type: AWS::EC2::Subnet::Id
-  DBSubnet2:
-    Type: AWS::EC2::Subnet::Id
-  DBSubnet3:
-    Type: AWS::EC2::Subnet::Id
+  # DBSubnet1:
+  #   Type: AWS::EC2::Subnet::Id
+  # DBSubnet2:
+  #   Type: AWS::EC2::Subnet::Id
+  # DBSubnet3:
+  #   Type: AWS::EC2::Subnet::Id
+  PrivateSubnets:
+    Type: String
 Resources:
   DataLoadFunction:
     Type: AWS::Lambda::Function
     Properties:
       Handler: lambda_function.lambda_handler
+      MemorySize: 3008
       Code:
-        S3Bucket: curriki-eks-ali-west
-        S3Key: CurrikiDemo/DataLoadFunction/DataLoadFunction.zip
+        S3Bucket: studio-eks
+        S3Key: lambda/DataLoadFunction.zip
       Role:
         Ref: RoleARN
       Runtime: python3.7
@@ -27,9 +30,9 @@ Resources:
         SecurityGroupIds:
         - Ref: LambdaSecurityGroup
         SubnetIds:
-        - Ref: DBSubnet1
-        - Ref: DBSubnet2
-        - Ref: DBSubnet3
+          Fn::Split:
+          - ","
+          - !Ref PrivateSubnets
   LambdaSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:

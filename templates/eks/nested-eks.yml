@@ -1,6 +1,21 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: 'EKS Cluster and Managed Nodes'
 Parameters:
+  AvailabilityZones:
+    Description: 'List of Availability Zones to use for the subnets in the VPC. Note:
+      The logical order is preserved.'
+    Type: List<AWS::EC2::AvailabilityZone::Name>
+  NumberOfAZs:
+    AllowedValues:
+    - 2
+    - 3
+    - 4
+    - 5
+    - 6
+    Default: 3
+    Description: Number of Availability Zones to use in the VPC. This must match your
+      selections in the list of Availability Zones parameter.
+    Type: Number
   VpcCidrBlock:
     Type: String
     Description: CIDR Block for VPC
@@ -8,44 +23,44 @@ Parameters:
   PublicSubnetCidrBlockA:
     Type: String
     Description: CIDR Block for Public Subnet
-    Default: 10.0.0.0/19
+    Default: 10.0.200.0/24
   PublicSubnetCidrBlockB:
     Type: String
     Description: CIDR Block for Public Subnet
-    Default: 10.0.32.0/19
+    Default: 10.0.201.0/24
   PublicSubnetCidrBlockC:
     Type: String
     Description: CIDR Block for Public Subnet
-    Default: 10.0.64.0/19
+    Default: 10.0.202.0/24
   PublicSubnetCidrBlockD:
     Type: String
     Description: CIDR Block for Public Subnet
-    Default: 10.0.96.0/19
+    Default: 10.0.203.0/24
   PrivateSubnetCidrBlockA:
     Type: String
     Description: CIDR Block for Private Subnet
-    Default: 10.0.128.0/19
+    Default: 10.0.0.0/22
   PrivateSubnetCidrBlockB:
     Type: String
     Description: CIDR Block for Private Subnet
-    Default: 10.0.160.0/19
+    Default: 10.0.4.0/22
   PrivateSubnetCidrBlockC:
     Type: String
     Description: CIDR Block for Private Subnet
-    Default: 10.0.192.0/19
+    Default: 10.0.8.0/22
   PrivateSubnetCidrBlockD:
     Type: String
     Description: CIDR Block for Private Subnet
-    Default: 10.0.224.0/19
+    Default: 10.0.12.0/22
   ClusterName: 
     Type: String
     Description: Name of your managed EKS Cluster
   EksVersion:
     Type: String
     Description: EKS Version
-  ClusterName: 
-    Type: String
-    Description: Name of your managed EKS Cluster
+    AllowedValues:
+      - 1.17
+      - 1.18
   EbsDiskSize:
     Type: Number
     Description: Size of EBS Volume to be attached with worker nodes
@@ -168,14 +183,6 @@ Parameters:
   #   Default: "9.6"
   #   Description: "PostgreSQL Version"
   #   Type: String
-  MyVPC:
-    Type: AWS::EC2::VPC::Id
-  Subnet1:
-    Type: AWS::EC2::Subnet::Id
-  Subnet2:
-    Type: AWS::EC2::Subnet::Id
-  Subnet3:
-    Type: AWS::EC2::Subnet::Id
 Resources:
   EksCluster:
     Type: AWS::CloudFormation::Stack
@@ -192,6 +199,8 @@ Resources:
         PrivateSubnetCidrBlockB: !Ref PrivateSubnetCidrBlockB
         PrivateSubnetCidrBlockC: !Ref PrivateSubnetCidrBlockC
         PrivateSubnetCidrBlockD: !Ref PrivateSubnetCidrBlockD
+        AvailabilityZones: !Ref AvailabilityZones
+        NumberOfAZs: !Ref NumberOfAZs
       TemplateURL: https://studio-eks.s3.amazonaws.com/templates/eks/components/eks-cluster-01.yml
   EksNodeGroup:
     DependsOn: EksCluster
@@ -232,8 +241,7 @@ Resources:
       TemplateURL: https://studio-eks.s3.amazonaws.com/templates/eks/components/eks-database-deploy-04.yml
       TimeoutInMinutes: 60
       Parameters:
-        MyVPC:
-          Ref: MyVPC
+        MyVPC: !GetAtt EksCluster.Outputs.VPC
         DBSubnet1:
           Ref: Subnet1
         DBSubnet2:
@@ -255,8 +263,7 @@ Resources:
           Fn::GetAtt:
           - LambdaRoleStack
           - Outputs.LambdaRole
-        MyVPC:
-          Ref: MyVPC
+        MyVPC: !GetAtt EksCluster.Outputs.VPC
         DBSubnet1:
           Ref: Subnet1
         DBSubnet2:

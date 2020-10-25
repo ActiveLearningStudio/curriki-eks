@@ -27,7 +27,6 @@ Parameters:
     - 4
     - 5
     - 6
-    Default: 3
     Description: Number of Availability Zones to use in the VPC. This must match your
       selections in the list of Availability Zones parameter.
     Type: Number
@@ -40,39 +39,30 @@ Parameters:
   VpcCidrBlock:
     Type: String
     Description: CIDR Block for VPC
-    Default: 10.0.0.0/16
   PublicSubnetCidrBlockA:
     Type: String
     Description: CIDR Block for Public Subnet
-    Default: 10.0.200.0/24
   PublicSubnetCidrBlockB:
     Type: String
     Description: CIDR Block for Public Subnet
-    Default: 10.0.201.0/24
   PublicSubnetCidrBlockC:
     Type: String
     Description: CIDR Block for Public Subnet
-    Default: 10.0.202.0/24
   PublicSubnetCidrBlockD:
     Type: String
     Description: CIDR Block for Public Subnet
-    Default: 10.0.203.0/24
   PrivateSubnetCidrBlockA:
     Type: String
     Description: CIDR Block for Private Subnet
-    Default: 10.0.0.0/22
   PrivateSubnetCidrBlockB:
     Type: String
     Description: CIDR Block for Private Subnet
-    Default: 10.0.4.0/22
   PrivateSubnetCidrBlockC:
     Type: String
     Description: CIDR Block for Private Subnet
-    Default: 10.0.8.0/22
   PrivateSubnetCidrBlockD:
     Type: String
     Description: CIDR Block for Private Subnet
-    Default: 10.0.12.0/22
 
 Conditions:
   CreateTwoSubnets:

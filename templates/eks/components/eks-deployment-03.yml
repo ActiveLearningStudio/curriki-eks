@@ -91,7 +91,6 @@ Resources:
             cd curriki-eks/envs
             cp .env.client.example .env.local
             cp .env.api.example .env
-            cd ~/
             kubectl create secret generic currikidev-api-secret --from-file=.env
             kubectl create secret generic currikidev-client-secret --from-file=.env.local
             cd ~/

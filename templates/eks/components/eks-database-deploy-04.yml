@@ -7,12 +7,14 @@ Description: 'AWS CloudFormation Sample Template RDS_with_DBParameterGroup: Samp
 Parameters:
   MyVPC:
     Type: AWS::EC2::VPC::Id
-  DBSubnet1:
-    Type: AWS::EC2::Subnet::Id
-  DBSubnet2:
-    Type: AWS::EC2::Subnet::Id
-  DBSubnet3:
-    Type: AWS::EC2::Subnet::Id
+  # DBSubnet1:
+  #   Type: AWS::EC2::Subnet::Id
+  # DBSubnet2:
+  #   Type: AWS::EC2::Subnet::Id
+  # DBSubnet3:
+  #   Type: AWS::EC2::Subnet::Id
+  PrivateSubnets:
+    Type: String
 Resources:
   MyDB:
     Type: AWS::RDS::DBInstance
@@ -49,9 +51,9 @@ Resources:
       DBSubnetGroupDescription: Private VPC Group
       DBSubnetGroupName: PrivateVPCSubnetGroup
       SubnetIds:
-      - Ref: DBSubnet1
-      - Ref: DBSubnet2
-      - Ref: DBSubnet3
+        Fn::Split:
+        - ","
+        - !Ref PrivateSubnets
   SecretRDSInstanceAttachment:
     Type: AWS::SecretsManager::SecretTargetAttachment
     Properties:
