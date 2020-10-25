@@ -9,9 +9,9 @@ Parameters:
     Type: AWS::EC2::KeyPair::KeyName
   VpcId:
     Type: String
-  VpcCidrBlock:
-    Type: String
-    Description: CIDR Block for VPC
+  # VpcCidrBlock:
+  #   Type: String
+  #   Description: CIDR Block for VPC
   ClusterName: 
     Type: String
     Description: Name of your managed EKS Cluster
@@ -67,7 +67,7 @@ Parameters:
   #   Type: String
 Resources:
   Ec2Instance:
-    DependsOn: EksEfsFileSystem
+    # DependsOn: EksEfsFileSystem
     Type: AWS::EC2::Instance
     Properties: 
       ImageId: !Ref AmiId
@@ -87,22 +87,16 @@ Resources:
             aws configure set aws_secret_access_key ${AwsSecretAccessKey} --profile default
             aws eks update-kubeconfig --name ${ClusterName} --region ${AWS::Region}
             git clone -b develop https://github.com/ActiveLearningStudio/curriki-eks.git
-            sed 's/fs-abcdefghi/${EksEfsFileSystem}/g' curriki-eks/yamls/api.yaml
-            cd curriki-eks/envs
-            cp .env.client.example .env.local
-            cp .env.api.example .env
-            kubectl create secret generic currikidev-api-secret --from-file=.env
-            kubectl create secret generic currikidev-client-secret --from-file=.env.local
-            cd ~/
-            kubectl apply -f curriki-eks/yamls/api.yaml
-            kubectl apply -f curriki-eks/yamls/client.yaml
+            cp /curriki-eks/envs/.env.client.example /curriki-eks/envs/.env.local
+            cp /curriki-eks/envs/.env.api.example /curriki-eks/envs/.env
+            sudo kubectl create secret generic currikidev-api-secret --from-file=/curriki-eks/envs/.env
+            sudo kubectl create secret generic currikidev-client-secret --from-file=/curriki-eks/envs/.env.local
+            sudo kubectl apply -f /curriki-eks/yamls/api.ebs.yaml
+            sudo kubectl apply -f /curriki-eks/yamls/client.yaml
             curl -L https://istio.io/downloadIstio | sh -
-            cd istio-1.7.3
-            export PATH=$PWD/bin:$PATH
-            istioctl install --set profile=demo
-            kubectl label namespace default istio-injection=enabled
-            cd ~/
-            kubectl apply -f curriki-eks/yamls/istio.yaml
+            sudo /istio-1.7.3/bin/istioctl install --set profile=demo
+            sudo kubectl label namespace default istio-injection=enabled
+            sudo kubectl apply -f /curriki-eks/yamls/istio.yaml
   Ec2SecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
@@ -112,6 +106,10 @@ Resources:
       - IpProtocol: tcp
         FromPort: '8080'
         ToPort: '8080'
+        CidrIp: 0.0.0.0/0
+      - IpProtocol: tcp
+        FromPort: '22'
+        ToPort: '22'
         CidrIp: 0.0.0.0/0
       Tags:
       - Key: Name
@@ -183,14 +181,14 @@ Resources:
   #     StorageType: gp2
   #     VPCSecurityGroups:
   #       - Ref: DatabaseSecurityGroup
-  EksEfsFileSystem:
-    Type: AWS::EFS::FileSystem
-    Properties: 
-      BackupPolicy: 
-        Status: ENABLED
-      Encrypted: true
-      FileSystemTags: 
-        - Key: Name
-          Value: EksEfsFileSystem
-      LifecyclePolicies: 
-        - TransitionToIA: AFTER_30_DAYS
+  # EksEfsFileSystem:
+  #   Type: AWS::EFS::FileSystem
+  #   Properties: 
+  #     BackupPolicy: 
+  #       Status: ENABLED
+  #     Encrypted: true
+  #     FileSystemTags: 
+  #       - Key: Name
+  #         Value: EksEfsFileSystem
+  #     LifecyclePolicies: 
+  #       - TransitionToIA: AFTER_30_DAYS
