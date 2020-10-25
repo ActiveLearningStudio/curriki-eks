@@ -132,42 +132,50 @@ Parameters:
     Type: String
     Description: AWS Secret Access Key
     NoEcho: "true"
-  DatabaseInstanceType: 
-    AllowedValues: 
-      - db.t2.micro
-      - db.t2.small
-      - db.r3.large
-      - db.r3.xlarge
-      - db.r3.2xlarge
-      - db.r3.4xlarge
-      - db.r3.8xlarge
-    Default: db.t2.micro
-    Description: "The instance type to use for the database."
-    Type: String
-  DatabasePassword: 
-    Description: "The database admin account password."
-    MaxLength: "41"
-    MinLength: "8"
-    NoEcho: "true"
-    Type: String
-  DatabaseUsername: 
-    AllowedPattern: "[a-zA-Z0-9]+"
-    ConstraintDescription: "must contain only alphanumeric characters."
-    Default: awsmaster
-    Description: "The database admin account user name."
-    MaxLength: "16"
-    MinLength: "1"
-    Type: String
-  MultiAZ: 
-    AllowedValues: 
-      - true
-      - false
-    Description: "Multi AZ setup for database"
-    Type: String
-  PGVersion: 
-    Default: "9.6"
-    Description: "PostgreSQL Version"
-    Type: String
+  # DatabaseInstanceType: 
+  #   AllowedValues: 
+  #     - db.t2.micro
+  #     - db.t2.small
+  #     - db.r3.large
+  #     - db.r3.xlarge
+  #     - db.r3.2xlarge
+  #     - db.r3.4xlarge
+  #     - db.r3.8xlarge
+  #   Default: db.t2.micro
+  #   Description: "The instance type to use for the database."
+  #   Type: String
+  # DatabasePassword: 
+  #   Description: "The database admin account password."
+  #   MaxLength: "41"
+  #   MinLength: "8"
+  #   NoEcho: "true"
+  #   Type: String
+  # DatabaseUsername: 
+  #   AllowedPattern: "[a-zA-Z0-9]+"
+  #   ConstraintDescription: "must contain only alphanumeric characters."
+  #   Default: awsmaster
+  #   Description: "The database admin account user name."
+  #   MaxLength: "16"
+  #   MinLength: "1"
+  #   Type: String
+  # MultiAZ: 
+  #   AllowedValues: 
+  #     - true
+  #     - false
+  #   Description: "Multi AZ setup for database"
+  #   Type: String
+  # PGVersion: 
+  #   Default: "9.6"
+  #   Description: "PostgreSQL Version"
+  #   Type: String
+  MyVPC:
+    Type: AWS::EC2::VPC::Id
+  Subnet1:
+    Type: AWS::EC2::Subnet::Id
+  Subnet2:
+    Type: AWS::EC2::Subnet::Id
+  Subnet3:
+    Type: AWS::EC2::Subnet::Id
 Resources:
   EksCluster:
     Type: AWS::CloudFormation::Stack
@@ -184,7 +192,7 @@ Resources:
         PrivateSubnetCidrBlockB: !Ref PrivateSubnetCidrBlockB
         PrivateSubnetCidrBlockC: !Ref PrivateSubnetCidrBlockC
         PrivateSubnetCidrBlockD: !Ref PrivateSubnetCidrBlockD
-      TemplateURL: https://curriki-nested-cft.s3.us-east-2.amazonaws.com/eks-cluster.yml
+      TemplateURL: https://studio-eks.s3.amazonaws.com/templates/eks/components/eks-cluster-01.yml
   EksNodeGroup:
     DependsOn: EksCluster
     Type: AWS::CloudFormation::Stack
@@ -198,7 +206,7 @@ Resources:
         MaxWorkerNodes: !Ref MaxWorkerNodes
         DesiredWorkerNodes: !Ref DesiredWorkerNodes
         PublicSubnets: !GetAtt EksCluster.Outputs.SubnetsPublic
-      TemplateURL: https://curriki-nested-cft.s3.us-east-2.amazonaws.com/eks-nodegroup.yml
+      TemplateURL: https://studio-eks.s3.amazonaws.com/templates/eks/components/eks-nodegroup-02.yml
   EksDeployment:
     DependsOn: EksNodeGroup
     Type: AWS::CloudFormation::Stack
@@ -210,12 +218,62 @@ Resources:
         ClusterName: !Ref ClusterName
         AwsAccessKeyId: !Ref AwsAccessKeyId
         AwsSecretAccessKey: !Ref AwsSecretAccessKey
-        DatabaseInstanceType: !Ref DatabaseInstanceType
-        DatabasePassword: !Ref DatabasePassword
-        DatabaseUsername: !Ref DatabaseUsername
-        MultiAZ: !Ref MultiAZ
-        PGVersion: !Ref PGVersion
-        PrivateSubnets: !GetAtt EksCluster.Outputs.SubnetsPrivate
+        # DatabaseInstanceType: !Ref DatabaseInstanceType
+        # DatabasePassword: !Ref DatabasePassword
+        # DatabaseUsername: !Ref DatabaseUsername
+        # MultiAZ: !Ref MultiAZ
+        # PGVersion: !Ref PGVersion
+        # PrivateSubnets: !GetAtt EksCluster.Outputs.SubnetsPrivate
         VpcCidrBlock: !Ref VpcCidrBlock
-      TemplateURL: https://curriki-nested-cft.s3.us-east-2.amazonaws.com/eks-deployment.yml
-      
+      TemplateURL: https://studio-eks.s3.amazonaws.com/templates/eks/components/eks-deployment-03.yml
+  dbStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: https://studio-eks.s3.amazonaws.com/templates/eks/components/eks-database-deploy-04.yml
+      TimeoutInMinutes: 60
+      Parameters:
+        MyVPC:
+          Ref: MyVPC
+        DBSubnet1:
+          Ref: Subnet1
+        DBSubnet2:
+          Ref: Subnet2
+        DBSubnet3:
+          Ref: Subnet3
+  LambdaRoleStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: https://studio-eks.s3.amazonaws.com/templates/eks/components/eks-lambda-role-stack-05.yml
+      TimeoutInMinutes: 60
+  DataLoadFunctionStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: https://studio-eks.s3.amazonaws.com/templates/eks/components/eks-data-load-function-stack-06.yml
+      TimeoutInMinutes: 60
+      Parameters:
+        RoleARN:
+          Fn::GetAtt:
+          - LambdaRoleStack
+          - Outputs.LambdaRole
+        MyVPC:
+          Ref: MyVPC
+        DBSubnet1:
+          Ref: Subnet1
+        DBSubnet2:
+          Ref: Subnet2
+        DBSubnet3:
+          Ref: Subnet3
+  DBDataLoad:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: https://studio-eks.s3.amazonaws.com/templates/eks/components/eks-custom-resource-07.yml
+      TimeoutInMinutes: 5
+      Parameters:
+        DatabaseURL:
+          Fn::GetAtt:
+          - dbStack
+          - Outputs.EndpointURL
+        FunctionARN:
+          Fn::GetAtt:
+          - DataLoadFunctionStack
+          - Outputs.FunctionARN

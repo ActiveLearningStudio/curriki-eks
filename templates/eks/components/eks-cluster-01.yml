@@ -1,0 +1,654 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'EKS cluster'
+Mappings:
+  ServicePrincipalPartitionMap:
+    aws:
+      EC2: ec2.amazonaws.com
+      EKS: eks.amazonaws.com
+      EKSFargatePods: eks-fargate-pods.amazonaws.com
+    aws-cn:
+      EC2: ec2.amazonaws.com.cn
+      EKS: eks.amazonaws.com
+      EKSFargatePods: eks-fargate-pods.amazonaws.com
+    aws-us-gov:
+      EC2: ec2.amazonaws.com
+      EKS: eks.amazonaws.com
+      EKSFargatePods: eks-fargate-pods.amazonaws.com
+Parameters:
+  AvailabilityZones:
+    Description: 'List of Availability Zones to use for the subnets in the VPC. Note:
+      The logical order is preserved.'
+    Type: List<AWS::EC2::AvailabilityZone::Name>
+  NumberOfAZs:
+    AllowedValues:
+    - 2
+    - 3
+    - 4
+    - 5
+    - 6
+    Default: 3
+    Description: Number of Availability Zones to use in the VPC. This must match your
+      selections in the list of Availability Zones parameter.
+    Type: Number
+  ClusterName: 
+    Type: String
+    Description: Name of your managed EKS Cluster
+  EksVersion:
+    Type: String
+    Description: EKS Version
+  VpcCidrBlock:
+    Type: String
+    Description: CIDR Block for VPC
+    Default: 10.0.0.0/16
+  PublicSubnetCidrBlockA:
+    Type: String
+    Description: CIDR Block for Public Subnet
+    Default: 10.0.200.0/24
+  PublicSubnetCidrBlockB:
+    Type: String
+    Description: CIDR Block for Public Subnet
+    Default: 10.0.201.0/24
+  PublicSubnetCidrBlockC:
+    Type: String
+    Description: CIDR Block for Public Subnet
+    Default: 10.0.202.0/24
+  PublicSubnetCidrBlockD:
+    Type: String
+    Description: CIDR Block for Public Subnet
+    Default: 10.0.203.0/24
+  PrivateSubnetCidrBlockA:
+    Type: String
+    Description: CIDR Block for Private Subnet
+    Default: 10.0.0.0/22
+  PrivateSubnetCidrBlockB:
+    Type: String
+    Description: CIDR Block for Private Subnet
+    Default: 10.0.4.0/22
+  PrivateSubnetCidrBlockC:
+    Type: String
+    Description: CIDR Block for Private Subnet
+    Default: 10.0.8.0/22
+  PrivateSubnetCidrBlockD:
+    Type: String
+    Description: CIDR Block for Private Subnet
+    Default: 10.0.12.0/22
+
+Conditions:
+  CreateTwoSubnets:
+    !Equals [ '2', !Ref NumberOfAZs ]
+    
+  CreateThreeSubnets:
+    !Equals [ '3', !Ref NumberOfAZs ]
+
+  CreateFourSubnets:
+    !Equals [ '4', !Ref NumberOfAZs ]
+
+Resources:
+  ClusterSharedNodeSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Communication between all nodes in the cluster
+      Tags:
+      - Key: Name
+        Value:
+          Fn::Sub: "${AWS::StackName}/ClusterSharedNodeSecurityGroup"
+      VpcId:
+        Ref: VPC
+  ControlPlane:
+    Type: AWS::EKS::Cluster
+    Properties:
+      Name: !Ref ClusterName
+      ResourcesVpcConfig:
+        SecurityGroupIds:
+        - Ref: ControlPlaneSecurityGroup
+        SubnetIds: !If [ CreateTwoSubnets, [!Ref SubnetPublic1A, !Ref SubnetPublic1B, !Ref SubnetPrivate1A, !Ref SubnetPrivate1B], !If [ CreateThreeSubnets, [!Ref SubnetPublic1A, !Ref SubnetPublic1B, !Ref SubnetPublic1C3, !Ref SubnetPrivate1A, !Ref SubnetPrivate1B, !Ref SubnetPrivate1C3], [!Ref SubnetPublic1A, !Ref SubnetPublic1B, !Ref SubnetPublic1C, !Ref SubnetPublic1D, !Ref SubnetPrivate1A, !Ref SubnetPrivate1B, !Ref SubnetPrivate1C, !Ref SubnetPrivate1D] ]]
+      RoleArn:
+        Fn::GetAtt:
+        - ServiceRole
+        - Arn
+      Version: !Ref EksVersion
+  ControlPlaneSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Communication between the control plane and worker nodegroups
+      Tags:
+      - Key: Name
+        Value:
+          Fn::Sub: "${AWS::StackName}/ControlPlaneSecurityGroup"
+      VpcId:
+        Ref: VPC
+  IngressDefaultClusterToNodeSG:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      Description: Allow managed and unmanaged nodes to communicate with each other
+        (all ports)
+      FromPort: 0
+      GroupId:
+        Ref: ClusterSharedNodeSecurityGroup
+      IpProtocol: "-1"
+      SourceSecurityGroupId:
+        Fn::GetAtt:
+        - ControlPlane
+        - ClusterSecurityGroupId
+      ToPort: 65535
+  IngressInterNodeGroupSG:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      Description: Allow nodes to communicate with each other (all ports)
+      FromPort: 0
+      GroupId:
+        Ref: ClusterSharedNodeSecurityGroup
+      IpProtocol: "-1"
+      SourceSecurityGroupId:
+        Ref: ClusterSharedNodeSecurityGroup
+      ToPort: 65535
+  IngressNodeToDefaultClusterSG:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      Description: Allow unmanaged nodes to communicate with control plane (all ports)
+      FromPort: 0
+      GroupId:
+        Fn::GetAtt:
+        - ControlPlane
+        - ClusterSecurityGroupId
+      IpProtocol: "-1"
+      SourceSecurityGroupId:
+        Ref: ClusterSharedNodeSecurityGroup
+      ToPort: 65535
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+      - Key: Name
+        Value:
+          Fn::Sub: "${AWS::StackName}/InternetGateway"
+  NATGateway:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId:
+        Fn::GetAtt:
+        - NATIP
+        - AllocationId
+      SubnetId:
+        Ref: SubnetPublic1A
+      Tags:
+      - Key: Name
+        Value:
+          Fn::Sub: "${AWS::StackName}/NATGateway"
+  NATIP:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+      Tags:
+      - Key: Name
+        Value:
+          Fn::Sub: "${AWS::StackName}/NATIP"
+  NATPrivateSubnetRoute1A:
+    Type: AWS::EC2::Route
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId:
+        Ref: NATGateway
+      RouteTableId:
+        Ref: PrivateRouteTable1A
+  NATPrivateSubnetRoute1B:
+    Type: AWS::EC2::Route
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId:
+        Ref: NATGateway
+      RouteTableId:
+        Ref: PrivateRouteTable1B
+  NATPrivateSubnetRoute1C:
+    Condition: CreateThreeSubnets
+    Type: AWS::EC2::Route
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId:
+        Ref: NATGateway
+      RouteTableId:
+        Ref: PrivateRouteTable1C3
+  NATPrivateSubnetRoute1C:
+    Condition: CreateFourSubnets
+    Type: AWS::EC2::Route
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId:
+        Ref: NATGateway
+      RouteTableId:
+        Ref: PrivateRouteTable1C
+  NATPrivateSubnetRoute1D:
+    Condition: CreateFourSubnets
+    Type: AWS::EC2::Route
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId:
+        Ref: NATGateway
+      RouteTableId:
+        Ref: PrivateRouteTable1D
+  PolicyCloudWatchMetrics:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Statement:
+        - Action:
+          - cloudwatch:PutMetricData
+          Effect: Allow
+          Resource: "*"
+        Version: '2012-10-17'
+      PolicyName:
+        Fn::Sub: "${AWS::StackName}-PolicyCloudWatchMetrics"
+      Roles:
+      - Ref: ServiceRole
+  PolicyELBPermissions:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Statement:
+        - Action:
+          - ec2:DescribeAccountAttributes
+          Effect: Allow
+          Resource: "*"
+        Version: '2012-10-17'
+      PolicyName:
+        Fn::Sub: "${AWS::StackName}-PolicyELBPermissions"
+      Roles:
+      - Ref: ServiceRole
+  PrivateRouteTable1A:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      Tags:
+      - Key: Name
+        Value:
+          Fn::Sub: "${AWS::StackName}/PrivateRouteTable1A"
+      VpcId:
+        Ref: VPC
+  PrivateRouteTable1B:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      Tags:
+      - Key: Name
+        Value:
+          Fn::Sub: "${AWS::StackName}/PrivateRouteTable1B"
+      VpcId:
+        Ref: VPC
+  PrivateRouteTable1C3:
+    Condition: CreateThreeSubnets
+    Type: AWS::EC2::RouteTable
+    Properties:
+      Tags:
+      - Key: Name
+        Value:
+          Fn::Sub: "${AWS::StackName}/PrivateRouteTable1C"
+      VpcId:
+        Ref: VPC
+  PrivateRouteTable1C:
+    Condition: CreateFourSubnets
+    Type: AWS::EC2::RouteTable
+    Properties:
+      Tags:
+      - Key: Name
+        Value:
+          Fn::Sub: "${AWS::StackName}/PrivateRouteTable1C"
+      VpcId:
+        Ref: VPC
+  PrivateRouteTable1D:
+    Condition: CreateFourSubnets
+    Type: AWS::EC2::RouteTable
+    Properties:
+      Tags:
+      - Key: Name
+        Value:
+          Fn::Sub: "${AWS::StackName}/PrivateRouteTable1D"
+      VpcId:
+        Ref: VPC
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      Tags:
+      - Key: Name
+        Value:
+          Fn::Sub: "${AWS::StackName}/PublicRouteTable"
+      VpcId:
+        Ref: VPC
+  PublicSubnetRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId:
+        Ref: InternetGateway
+      RouteTableId:
+        Ref: PublicRouteTable
+    DependsOn:
+    - VPCGatewayAttachment
+  RouteTableAssociationPrivate1A:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId:
+        Ref: PrivateRouteTable1A
+      SubnetId:
+        Ref: SubnetPrivate1A
+  RouteTableAssociationPrivate1B:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId:
+        Ref: PrivateRouteTable1B
+      SubnetId:
+        Ref: SubnetPrivate1B
+  RouteTableAssociationPrivate1C3:
+    Condition: CreateThreeSubnets
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId:
+        Ref: PrivateRouteTable1C3
+      SubnetId:
+        Ref: SubnetPrivate1C3
+  RouteTableAssociationPrivate1C:
+    Condition: CreateFourSubnets
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId:
+        Ref: PrivateRouteTable1C
+      SubnetId:
+        Ref: SubnetPrivate1C
+  RouteTableAssociationPrivate1D:
+    Condition: CreateFourSubnets
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId:
+        Ref: PrivateRouteTable1D
+      SubnetId:
+        Ref: SubnetPrivate1D
+  RouteTableAssociationPublic1A:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId:
+        Ref: PublicRouteTable
+      SubnetId:
+        Ref: SubnetPublic1A
+  RouteTableAssociationPublic1B:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId:
+        Ref: PublicRouteTable
+      SubnetId:
+        Ref: SubnetPublic1B
+  RouteTableAssociationPublic1C3:
+    Condition: CreateThreeSubnets
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId:
+        Ref: PublicRouteTable
+      SubnetId:
+        Ref: SubnetPublic1C3
+  RouteTableAssociationPublic1C:
+    Condition: CreateFourSubnets
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId:
+        Ref: PublicRouteTable
+      SubnetId:
+        Ref: SubnetPublic1C
+  RouteTableAssociationPublic1D:
+    Condition: CreateFourSubnets
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId:
+        Ref: PublicRouteTable
+      SubnetId:
+        Ref: SubnetPublic1D
+  ServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Action:
+          - sts:AssumeRole
+          Effect: Allow
+          Principal:
+            Service:
+            - Fn::FindInMap:
+              - ServicePrincipalPartitionMap
+              - Ref: AWS::Partition
+              - EKS
+            - Fn::FindInMap:
+              - ServicePrincipalPartitionMap
+              - Ref: AWS::Partition
+              - EKSFargatePods
+        Version: '2012-10-17'
+      ManagedPolicyArns:
+      - Fn::Sub: arn:${AWS::Partition}:iam::aws:policy/AmazonEKSClusterPolicy
+      Tags:
+      - Key: Name
+        Value:
+          Fn::Sub: "${AWS::StackName}/ServiceRole"
+  SubnetPrivate1A:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Select [ 0, !Ref AvailabilityZones ]
+      CidrBlock: !Ref PrivateSubnetCidrBlockA
+      Tags:
+      - Key: kubernetes.io/role/internal-elb
+        Value: '1'
+      - Key: Name
+        Value:
+          Fn::Sub: "${AWS::StackName}/SubnetPrivate1A"
+      VpcId:
+        Ref: VPC
+  SubnetPrivate1B:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Select [ 1, !Ref AvailabilityZones ]
+      CidrBlock: !Ref PrivateSubnetCidrBlockB
+      Tags:
+      - Key: kubernetes.io/role/internal-elb
+        Value: '1'
+      - Key: Name
+        Value:
+          Fn::Sub: "${AWS::StackName}/SubnetPrivate1B"
+      VpcId:
+        Ref: VPC
+  SubnetPrivate1C3:
+    Condition: CreateThreeSubnets
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Select [ 2, !Ref AvailabilityZones ]
+      CidrBlock: !Ref PrivateSubnetCidrBlockC
+      Tags:
+      - Key: kubernetes.io/role/internal-elb
+        Value: '1'
+      - Key: Name
+        Value:
+          Fn::Sub: "${AWS::StackName}/SubnetPrivate1C"
+      VpcId:
+        Ref: VPC
+  SubnetPrivate1C:
+    Condition: CreateFourSubnets
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Select [ 2, !Ref AvailabilityZones ]
+      CidrBlock: !Ref PrivateSubnetCidrBlockC
+      Tags:
+      - Key: kubernetes.io/role/internal-elb
+        Value: '1'
+      - Key: Name
+        Value:
+          Fn::Sub: "${AWS::StackName}/SubnetPrivate1C"
+      VpcId:
+        Ref: VPC
+  SubnetPrivate1D:
+    Condition: CreateFourSubnets
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Select [ 3, !Ref AvailabilityZones ]
+      CidrBlock: !Ref PrivateSubnetCidrBlockD
+      Tags:
+      - Key: kubernetes.io/role/internal-elb
+        Value: '1'
+      - Key: Name
+        Value:
+          Fn::Sub: "${AWS::StackName}/SubnetPrivate1D"
+      VpcId:
+        Ref: VPC
+  SubnetPublic1A:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Select [ 0, !Ref AvailabilityZones ]
+      CidrBlock: !Ref PublicSubnetCidrBlockA
+      MapPublicIpOnLaunch: true
+      Tags:
+      - Key: kubernetes.io/role/elb
+        Value: '1'
+      - Key: Name
+        Value:
+          Fn::Sub: "${AWS::StackName}/SubnetPublic1A"
+      VpcId:
+        Ref: VPC
+  SubnetPublic1B:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Select [ 1, !Ref AvailabilityZones ]
+      CidrBlock: !Ref PublicSubnetCidrBlockB
+      MapPublicIpOnLaunch: true
+      Tags:
+      - Key: kubernetes.io/role/elb
+        Value: '1'
+      - Key: Name
+        Value:
+          Fn::Sub: "${AWS::StackName}/SubnetPublic1B"
+      VpcId:
+        Ref: VPC
+  SubnetPublic1C3:
+    Condition: CreateThreeSubnets
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Select [ 2, !Ref AvailabilityZones ]
+      CidrBlock: !Ref PublicSubnetCidrBlockC
+      MapPublicIpOnLaunch: true
+      Tags:
+      - Key: kubernetes.io/role/elb
+        Value: '1'
+      - Key: Name
+        Value:
+          Fn::Sub: "${AWS::StackName}/SubnetPublic1C"
+      VpcId:
+        Ref: VPC
+  SubnetPublic1C:
+    Condition: CreateFourSubnets
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Select [ 2, !Ref AvailabilityZones ]
+      CidrBlock: !Ref PublicSubnetCidrBlockC
+      MapPublicIpOnLaunch: true
+      Tags:
+      - Key: kubernetes.io/role/elb
+        Value: '1'
+      - Key: Name
+        Value:
+          Fn::Sub: "${AWS::StackName}/SubnetPublic1C"
+      VpcId:
+        Ref: VPC
+  SubnetPublic1D:
+    Condition: CreateFourSubnets
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Select [ 3, !Ref AvailabilityZones ]
+      CidrBlock: !Ref PublicSubnetCidrBlockD
+      MapPublicIpOnLaunch: true
+      Tags:
+      - Key: kubernetes.io/role/elb
+        Value: '1'
+      - Key: Name
+        Value:
+          Fn::Sub: "${AWS::StackName}/SubnetPublic1D"
+      VpcId:
+        Ref: VPC
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref VpcCidrBlock
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      Tags:
+      - Key: Name
+        Value:
+          Fn::Sub: "${AWS::StackName}/VPC"
+  VPCGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId:
+        Ref: InternetGateway
+      VpcId:
+        Ref: VPC
+Outputs:
+  ARN:
+    Export:
+      Name:
+        Fn::Sub: "${AWS::StackName}::ARN"
+    Value:
+      Fn::GetAtt:
+      - ControlPlane
+      - Arn
+  CertificateAuthorityData:
+    Value:
+      Fn::GetAtt:
+      - ControlPlane
+      - CertificateAuthorityData
+  ClusterSecurityGroupId:
+    Export:
+      Name:
+        Fn::Sub: "${AWS::StackName}::ClusterSecurityGroupId"
+    Value:
+      Fn::GetAtt:
+      - ControlPlane
+      - ClusterSecurityGroupId
+  ClusterStackName:
+    Value:
+      Ref: AWS::StackName
+  Endpoint:
+    Export:
+      Name:
+        Fn::Sub: "${AWS::StackName}::Endpoint"
+    Value:
+      Fn::GetAtt:
+      - ControlPlane
+      - Endpoint
+  FeatureNATMode:
+    Value: Single
+  SecurityGroup:
+    Export:
+      Name:
+        Fn::Sub: "${AWS::StackName}::SecurityGroup"
+    Value:
+      Ref: ControlPlaneSecurityGroup
+  ServiceRoleARN:
+    Export:
+      Name:
+        Fn::Sub: "${AWS::StackName}::ServiceRoleARN"
+    Value:
+      Fn::GetAtt:
+      - ServiceRole
+      - Arn
+  SharedNodeSecurityGroup:
+    Export:
+      Name:
+        Fn::Sub: "${AWS::StackName}::SharedNodeSecurityGroup"
+    Value:
+      Ref: ClusterSharedNodeSecurityGroup
+  SubnetsPrivate:
+    Export:
+      Name:
+        Fn::Sub: "${AWS::StackName}::SubnetsPrivate"
+    Value: !If [CreateFourSubnets, !Join [',', [!Ref SubnetPrivate1A, !Ref SubnetPrivate1B, !Ref SubnetPrivate1C, !Ref SubnetPrivate1D]], !If [CreateThreeSubnets, !Join [',', [!Ref SubnetPrivate1A, !Ref SubnetPrivate1B, !Ref SubnetPrivate1C3]], !Join [',', [!Ref SubnetPrivate1A, !Ref SubnetPrivate1B]]] ]
+  SubnetsPublic:
+    Export:
+      Name:
+        Fn::Sub: "${AWS::StackName}::SubnetsPublic"
+    Value: !If [CreateFourSubnets, !Join [',', [!Ref SubnetPublic1A, !Ref SubnetPublic1B, !Ref SubnetPublic1C, !Ref SubnetPublic1D]], !If [CreateThreeSubnets, !Join [',', [!Ref SubnetPublic1A, !Ref SubnetPublic1B, !Ref SubnetPublic1C3]], !Join [',', [!Ref SubnetPublic1A, !Ref SubnetPublic1B]]] ]
+  VPC:
+    Export:
+      Name:
+        Fn::Sub: "${AWS::StackName}::VPC"
+    Value:
+      Ref: VPC
