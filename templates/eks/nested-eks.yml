@@ -135,10 +135,6 @@ Parameters:
   DesiredWorkerNodes:
     Type: Number
     Description: Desired no. of Worker nodes in EKS Cluster
-  AmiId:
-    Type: AWS::SSM::Parameter::Value<String>
-    Description: ParameterStore name of the Parameter containing Ubuntu AMI
-    Default: /aws/service/canonical/ubuntu/server/20.04/stable/current/amd64/hvm/ebs-gp2/ami-id
   AwsAccessKeyId:
     Type: String
     Description: AWS Access Key ID
