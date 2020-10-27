@@ -58,9 +58,9 @@ Parameters:
   EksVersion:
     Type: String
     Description: EKS Version
-    # AllowedValues:
-    #   - "1.17"
-    #   - "1.18"
+    AllowedValues:
+    - "1.17"
+    - "1.18"
   EbsDiskSize:
     Type: Number
     Description: Size of EBS Volume to be attached with worker nodes
@@ -143,6 +143,15 @@ Parameters:
     Type: String
     Description: AWS Secret Access Key
     NoEcho: "true"
+  HostedZoneId:
+    Type: String
+    Description: Route53 hosted zone id
+  DomainName:
+    Type: String
+    Description: Domain name without http/https (www.example.com or *.example.com)
+  ValidationDomainName:
+    Type: String
+    Description: Fully Qualified domain Name (www.example.com)
   # DatabaseInstanceType: 
   #   AllowedValues: 
   #     - db.t2.micro
@@ -226,6 +235,9 @@ Resources:
         ClusterName: !Ref ClusterName
         AwsAccessKeyId: !Ref AwsAccessKeyId
         AwsSecretAccessKey: !Ref AwsSecretAccessKey
+        HostedZoneId: !Ref HostedZoneId
+        DomainName: !Ref DomainName
+        ValidationDomainName: !Ref ValidationDomainName
         # DatabaseInstanceType: !Ref DatabaseInstanceType
         # DatabasePassword: !Ref DatabasePassword
         # DatabaseUsername: !Ref DatabaseUsername

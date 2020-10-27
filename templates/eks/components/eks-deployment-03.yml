@@ -27,6 +27,15 @@ Parameters:
     Type: String
     Description: AWS Secret Access Key
     NoEcho: "true"
+  HostedZoneId:
+    Type: String
+    Description: Route53 hosted zone id
+  DomainName:
+    Type: String
+    Description: Domain name without http/https (www.example.com or *.example.com)
+  ValidationDomainName:
+    Type: String
+    Description: Fully Qualified domain Name (www.example.com)
   # DatabaseInstanceType: 
   #   AllowedValues: 
   #     - db.t2.micro
@@ -198,4 +207,9 @@ Resources:
         - TransitionToIA: AFTER_30_DAYS
   AcmCertArn:
     Type: AWS::CertificateManager::Certificate
-    DomainName: <<TODO: pass this in somehow...>>
+    Properties:
+      DomainName: !Ref DomainName
+      DomainValidationOptions:
+        - ValidationDomainName: !Ref ValidationDomainName
+          HostedZoneId: !Ref HostedZoneId
+      ValidationMethod: DNS 
