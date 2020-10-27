@@ -67,7 +67,9 @@ Parameters:
   #   Type: String
 Resources:
   Ec2Instance:
-    DependsOn: EksEfsFileSystem
+    DependsOn:
+      - EksEfsFileSystem
+      - AcmCertArn
     Type: AWS::EC2::Instance
     Properties: 
       ImageId: !Ref AmiId
@@ -95,7 +97,8 @@ Resources:
             sudo kubectl apply -f /curriki-eks/yamls/api.yaml
             sudo kubectl apply -f /curriki-eks/yamls/client.yaml
             curl -L https://istio.io/downloadIstio | sh -
-            sudo /istio-1.7.3/bin/istioctl install --set profile=demo
+            sed 's/substitute-me-acm-cert-substitute-me/${AcmCertArn}/g'
+            sudo /istio-1.7.3/bin/istioctl install --set profile=default -f /curriki-eks/yamls/istio-install.yaml
             sudo kubectl label namespace default istio-injection=enabled
             sudo kubectl apply -f /curriki-eks/yamls/istio.yaml
   Ec2SecurityGroup:
@@ -193,3 +196,6 @@ Resources:
           Value: EksEfsFileSystem
       LifecyclePolicies: 
         - TransitionToIA: AFTER_30_DAYS
+  AcmCertArn:
+    Type: AWS::CertificateManager::Certificate
+    DomainName: <<TODO: pass this in somehow...>>
