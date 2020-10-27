@@ -14,14 +14,10 @@ spec:
     - "*"
   - port:
       number: 443
-      name: https
-      protocol: HTTPS
+      name: httpsport
+      protocol: HTTP
     hosts:
       - "*"
-    tls:
-      mode: SIMPLE # enables HTTPS on this port
-      serverCertificate: /etc/certs/servercert.pem
-      privateKey: /etc/certs/privatekey.pem
 ---
 apiVersion: networking.istio.io/v1alpha3
 kind: VirtualService
