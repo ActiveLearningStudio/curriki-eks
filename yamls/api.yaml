@@ -90,7 +90,7 @@ spec:
   storageClassName: efs-sc
   csi:
     driver: efs.csi.aws.com
-    volumeHandle: fs-abcdefghi
+    volumeHandle: substitute-me-efs-substitute-me
   
 
 ---

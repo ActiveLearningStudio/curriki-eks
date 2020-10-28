@@ -5,6 +5,14 @@ Parameters:
     Type: String
   MyVPC:
     Type: AWS::EC2::VPC::Id
+  S3Bucket:
+    Type: String
+    Default: studio-eks
+    Description: Local Bucket where stack exists
+  DataLoadFunctionLambdaS3Key:
+    Type: String
+    Default: lambda/DataLoadFunction.zip
+    Description: DataLoadFunction.zip File in bucket
   # DBSubnet1:
   #   Type: AWS::EC2::Subnet::Id
   # DBSubnet2:
@@ -21,8 +29,8 @@ Resources:
       MemorySize: 3008
       # TODO: Remove hard coded bucket
       Code:
-        S3Bucket: studio-eks
-        S3Key: lambda/DataLoadFunction.zip
+        S3Bucket: !Ref S3Bucket #studio-eks
+        LambdaS3Key: !Ref DataLoadFunctionLambdaS3Key
       Role:
         Ref: RoleARN
       Runtime: python3.7

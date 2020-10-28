@@ -25,6 +25,6 @@ spec:
                 targetPort: 15443  
             type: LoadBalancer
           serviceAnnotations:
-            service.beta.kubernetes.io/aws-load-balancer-ssl-cert: "arn:aws:acm:ca-central-1:946488682732:certificate/bb36229a-bf46-4dc6-af37-56915100056b"
+            service.beta.kubernetes.io/aws-load-balancer-ssl-cert: "substitute-me-acm-cert-substitute-me"
             service.beta.kubernetes.io/aws-load-balancer-backend-protocol: http
             service.beta.kubernetes.io/aws-load-balancer-ssl-ports: "https"
