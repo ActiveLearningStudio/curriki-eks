@@ -210,6 +210,6 @@ Resources:
     Properties:
       DomainName: !Ref DomainName
       DomainValidationOptions:
-        - ValidationDomainName: !Ref ValidationDomainName
+        - DomainName: !Ref ValidationDomainName
           HostedZoneId: !Ref HostedZoneId
       ValidationMethod: DNS 
