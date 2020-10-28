@@ -23,7 +23,7 @@ Resources:
       AllocatedStorage: '5'
       VPCSecurityGroups:
       - Ref: DBSecurityGroup
-      DBInstanceClass: db.t3.xlarge
+      DBInstanceClass: db.t2.medium
       DBSubnetGroupName:
         Ref: DBSubnetGroup
       Engine: postgres

@@ -92,11 +92,15 @@ Resources:
           !Sub |
             #!/bin/bash
             apt upgrade -y && apt update -y
-            apt install awscli -y
+            apt install awscli nfs-common -y
             snap install kubectl --classic
             aws configure set aws_access_key_id ${AwsAccessKeyId} --profile default 
             aws configure set aws_secret_access_key ${AwsSecretAccessKey} --profile default
             aws eks update-kubeconfig --name ${ClusterName} --region ${AWS::Region}
+            mkdir ~/efs-mount ~/efs-s3-files
+            aws s3 sync s3://currikieks/quickstart-amazon-eks/ ~/efs-s3-files/
+            sudo cp -r ~/efs-s3-files/* ~/efs-mount
+            sudo mount -t nfs4 -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport ${EksEfsFileSystem}.efs.${AWS::Region}.amazonaws.com:/ ~/efs-mount
             git clone -b develop https://github.com/ActiveLearningStudio/curriki-eks.git
             sed 's/fs-abcdefghi/${EksEfsFileSystem}/g' /curriki-eks/yamls/api.yaml
             cp /curriki-eks/envs/.env.client.example /curriki-eks/envs/.env.local
@@ -123,6 +127,10 @@ Resources:
       - IpProtocol: tcp
         FromPort: '22'
         ToPort: '22'
+        CidrIp: 0.0.0.0/0
+      - IpProtocol: tcp
+        FromPort: '2049'
+        ToPort: '2049'
         CidrIp: 0.0.0.0/0
       Tags:
       - Key: Name
@@ -194,6 +202,7 @@ Resources:
   #     StorageType: gp2
   #     VPCSecurityGroups:
   #       - Ref: DatabaseSecurityGroup
+
   EksEfsFileSystem:
     Type: AWS::EFS::FileSystem
     Properties: 
@@ -212,4 +221,11 @@ Resources:
       DomainValidationOptions:
         - DomainName: !Ref ValidationDomainName
           HostedZoneId: !Ref HostedZoneId
-      ValidationMethod: DNS 
+      ValidationMethod: DNS
+  EksEfsTarget:
+    Type: AWS::EFS::MountTarget
+    Properties: 
+      FileSystemId: !Ref EksEfsFileSystem
+      SecurityGroups: 
+        - !Ref Ec2SecurityGroup
+      SubnetId: !Ref PublicSubnetId
