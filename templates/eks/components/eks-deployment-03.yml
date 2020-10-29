@@ -33,12 +33,15 @@ Parameters:
   DomainName:
     Type: String
     Description: Domain name without http/https (www.example.com or *.example.com)
-  ValidationDomainName:
-    Type: String
-    Description: Fully Qualified domain Name (www.example.com)
+  # ValidationDomainName:
+  #   Type: String
+  #   Description: Fully Qualified domain Name (www.example.com)
   S3BucketURL:
     Type: String
     Description: S3 Bucket URL
+  AcmCertArn:
+    Type: String
+    Description: Arn
   # DatabaseInstanceType: 
   #   AllowedValues: 
   #     - db.t2.micro
@@ -81,7 +84,7 @@ Resources:
   Ec2Instance:
     DependsOn:
       - EksEfsFileSystem
-      - AcmCertArn
+      # - AcmCertArn
     Type: AWS::EC2::Instance
     Properties: 
       ImageId: !Ref AmiId
@@ -101,7 +104,7 @@ Resources:
             aws configure set aws_secret_access_key ${AwsSecretAccessKey} --profile default
             aws eks update-kubeconfig --name ${ClusterName} --region ${AWS::Region}
             mkdir ~/efs-mount
-            wget {S3BucketURL}/templates/storage/storage.zip
+            wget {S3BucketURL}/storage/storage.zip
             unzip storage.zip -d ~/efs-mount
             sudo mount -t nfs4 -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport ${EksEfsFileSystem}.efs.${AWS::Region}.amazonaws.com:/ ~/efs-mount
             git clone -b develop https://github.com/ActiveLearningStudio/curriki-eks.git
@@ -113,11 +116,11 @@ Resources:
             sudo kubectl apply -f /curriki-eks/yamls/api.yaml
             sudo kubectl apply -f /curriki-eks/yamls/client.yaml
             curl -L https://istio.io/downloadIstio | ISTIO_VERSION=1.7.3 TARGET_ARCH=x86_64 sh -
-            sudo /istio-1.7.3/bin/istioctl install --set profile=demo
-            sed 's/substitute-me-acm-cert-substitute-me/${AcmCertArn}/g' /curriki-eks/yamls/istio-install.yaml    
+            sed 's/substitute-me-acm-cert-substitute-me/${AcmCertArn}/g' /curriki-eks/yamls/istio-install.yaml
+            sudo /istio-1.7.3/bin/istioctl install --set profile=default -f /curriki-eks/yamls/istio-install.yaml
             sudo kubectl label namespace default istio-injection=enabled
             sudo kubectl apply -f /curriki-eks/yamls/istio.yaml
-        # sudo /istio-1.7.3/bin/istioctl install --set profile=default -f /curriki-eks/yamls/istio-install.yaml
+        # sudo /istio-1.7.3/bin/istioctl install --set profile=demo
   Ec2SecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
@@ -218,14 +221,14 @@ Resources:
           Value: EksEfsFileSystem
       LifecyclePolicies: 
         - TransitionToIA: AFTER_30_DAYS
-  AcmCertArn:
-    Type: AWS::CertificateManager::Certificate
-    Properties:
-      DomainName: !Ref DomainName
-      DomainValidationOptions:
-        - DomainName: !Ref ValidationDomainName
-          HostedZoneId: !Ref HostedZoneId
-      ValidationMethod: DNS
+  # AcmCertArn:
+  #   Type: AWS::CertificateManager::Certificate
+  #   Properties:
+  #     DomainName: !Ref DomainName
+  #     DomainValidationOptions:
+  #       - DomainName: !Ref ValidationDomainName
+  #         HostedZoneId: !Ref HostedZoneId
+  #     ValidationMethod: DNS
   EksEfsTarget:
     Type: AWS::EFS::MountTarget
     Properties: 

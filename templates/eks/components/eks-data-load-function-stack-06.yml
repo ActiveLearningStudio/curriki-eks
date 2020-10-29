@@ -30,7 +30,7 @@ Resources:
       # TODO: Remove hard coded bucket
       Code:
         S3Bucket: !Ref S3Bucket #studio-eks
-        LambdaS3Key: !Ref DataLoadFunctionLambdaS3Key
+        S3Key: !Ref DataLoadFunctionLambdaS3Key
       Role:
         Ref: RoleARN
       Runtime: python3.7

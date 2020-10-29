@@ -149,9 +149,9 @@ Parameters:
   DomainName:
     Type: String
     Description: Domain name without http/https (www.example.com or *.example.com)
-  ValidationDomainName:
-    Type: String
-    Description: Fully Qualified domain Name (www.example.com)
+  # ValidationDomainName:
+  #   Type: String
+  #   Description: Fully Qualified domain Name (www.example.com)
   S3BucketURL:
     Type: String
     Description: S3 Bucket URL
@@ -182,6 +182,9 @@ Parameters:
       - db.r4.4xlarge
       - db.r4.8xlarge
       - db.r4.16xlarge
+  AcmCertArn:
+    Type: String
+    Description: Arn
   # DatabaseInstanceType: 
   #   AllowedValues: 
   #     - db.t2.micro
@@ -267,7 +270,9 @@ Resources:
         AwsSecretAccessKey: !Ref AwsSecretAccessKey
         HostedZoneId: !Ref HostedZoneId
         DomainName: !Ref DomainName
-        ValidationDomainName: !Ref ValidationDomainName
+        # ValidationDomainName: !Ref ValidationDomainName
+        S3BucketURL: !Ref S3BucketURL
+        AcmCertArn: !Ref AcmCertArn
         # DatabaseInstanceType: !Ref DatabaseInstanceType
         # DatabasePassword: !Ref DatabasePassword
         # DatabaseUsername: !Ref DatabaseUsername
