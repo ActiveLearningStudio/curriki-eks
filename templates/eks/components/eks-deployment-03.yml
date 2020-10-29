@@ -104,7 +104,7 @@ Resources:
             aws configure set aws_secret_access_key ${AwsSecretAccessKey} --profile default
             aws eks update-kubeconfig --name ${ClusterName} --region ${AWS::Region}
             mkdir ~/efs-mount
-            wget {S3BucketURL}/storage/storage.zip
+            wget ${S3BucketURL}/storage/storage.zip
             unzip storage.zip -d ~/efs-mount
             sudo mount -t nfs4 -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport ${EksEfsFileSystem}.efs.${AWS::Region}.amazonaws.com:/ ~/efs-mount
             git clone -b develop https://github.com/ActiveLearningStudio/curriki-eks.git
@@ -116,7 +116,7 @@ Resources:
             sudo kubectl apply -f /curriki-eks/yamls/api.yaml
             sudo kubectl apply -f /curriki-eks/yamls/client.yaml
             curl -L https://istio.io/downloadIstio | ISTIO_VERSION=1.7.3 TARGET_ARCH=x86_64 sh -
-            sed 's/substitute-me-acm-cert-substitute-me/${AcmCertArn}/g' /curriki-eks/yamls/istio-install.yaml
+            sed 's/substitute-me-acm-cert-substitute-me/${AcmCertArn//\//\\\/}/g' /curriki-eks/yamls/istio-install.yaml
             sudo /istio-1.7.3/bin/istioctl install --set profile=default -f /curriki-eks/yamls/istio-install.yaml
             sudo kubectl label namespace default istio-injection=enabled
             sudo kubectl apply -f /curriki-eks/yamls/istio.yaml
