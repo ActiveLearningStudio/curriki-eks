@@ -116,7 +116,7 @@ Resources:
             sudo kubectl apply -f /curriki-eks/yamls/api.yaml
             sudo kubectl apply -f /curriki-eks/yamls/client.yaml
             curl -L https://istio.io/downloadIstio | ISTIO_VERSION=1.7.3 TARGET_ARCH=x86_64 sh -
-            sed 's/substitute-me-acm-cert-substitute-me/${AcmCertArn//\//\\\/}/g' /curriki-eks/yamls/istio-install.yaml
+            sed 's/substitute-me-acm-cert-substitute-me/${AcmCertArn}/g' /curriki-eks/yamls/istio-install.yaml
             sudo /istio-1.7.3/bin/istioctl install --set profile=default -f /curriki-eks/yamls/istio-install.yaml
             sudo kubectl label namespace default istio-injection=enabled
             sudo kubectl apply -f /curriki-eks/yamls/istio.yaml
