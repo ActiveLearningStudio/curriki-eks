@@ -96,6 +96,7 @@ Resources:
             cp /curriki-eks/envs/.env.api.example /curriki-eks/envs/.env
             sudo kubectl create secret generic currikidev-api-secret --from-file=/curriki-eks/envs/.env
             sudo kubectl create secret generic currikidev-client-secret --from-file=/curriki-eks/envs/.env.local
+            sudo kubectl apply -k "github.com/kubernetes-sigs/aws-efs-csi-driver/deploy/kubernetes/overlays/stable/?ref=master"
             sudo kubectl apply -f /curriki-eks/yamls/api.yaml
             sudo kubectl apply -f /curriki-eks/yamls/client.yaml
             curl -L https://istio.io/downloadIstio | sh -

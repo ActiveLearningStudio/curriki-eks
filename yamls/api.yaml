@@ -46,7 +46,7 @@ spec:
         name: currikidev-api
         envFrom:
           - secretRef:
-              name: currikidev-api-env
+              name: currikidev-api-secret
         ports:
         - containerPort: 8000
         volumeMounts:
@@ -54,7 +54,7 @@ spec:
             name: currikidev-api-storage
             readOnly: false
           - mountPath: /var/www/html/env
-            name: "currikidev-api-env"
+            name: "currikidev-api-secret"
             readOnly: true
         resources: {}
       restartPolicy: Always
@@ -62,47 +62,7 @@ spec:
       volumes:
         - name: currikidev-api-storage
           persistentVolumeClaim:
-            claimName: currikidev-api-storage
-        - name: "currikidev-api-env"
+            claimName: efs
+        - name: "currikidev-api-secret"
           secret:
-            secretName: "currikidev-api-env"
-
-
----
-kind: StorageClass
-apiVersion: storage.k8s.io/v1
-metadata:
-  name: efs-sc
-provisioner: efs.csi.aws.com
-
----
-apiVersion: v1
-kind: PersistentVolume
-metadata:
-  name: laravel-storage-efs-pv
-spec:
-  capacity:
-    storage: 500Gi
-  volumeMode: Filesystem
-  accessModes:
-    - ReadWriteMany
-  persistentVolumeReclaimPolicy: Retain
-  storageClassName: efs-sc
-  csi:
-    driver: efs.csi.aws.com
-    volumeHandle: fs-abcdefghi
-  
-
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: currikidev-api-storage
-spec:
-  accessModes:
-    - ReadWriteMany
-  storageClassName: efs-sc
-  resources:
-    requests:
-      storage: 500Gi
----
+            secretName: "currikidev-api-secret"
