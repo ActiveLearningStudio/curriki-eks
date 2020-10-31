@@ -27,7 +27,7 @@ metadata:
   name: curriki
 spec:
   hosts:
-  - "*"
+  - "k8stest.currikistudio.org"
   gateways:
   - curriki-gateway
   http:
@@ -45,10 +45,20 @@ spec:
     route:
     - destination:
         host: currikidev-client
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: curriki-admin
+spec:
+  hosts:
+  - "admink8stest.currikistudio.org"
+  gateways:
+  - curriki-gateway
+  http:
   - match:
     - uri:
-        prefix: /admin/
+        prefix: /
     route:
     - destination:
         host: currikidev-admin
-        
