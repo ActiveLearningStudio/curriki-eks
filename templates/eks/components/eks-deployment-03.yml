@@ -103,17 +103,11 @@ Resources:
             aws configure set aws_access_key_id ${AwsAccessKeyId} --profile default 
             aws configure set aws_secret_access_key ${AwsSecretAccessKey} --profile default
             aws eks update-kubeconfig --name ${ClusterName} --region ${AWS::Region}
-            mkdir ~/efs-mount
-            wget ${S3BucketURL}/storage/storage.zip
-            unzip storage.zip -d ~/efs-mount
-            sudo mount -t nfs4 -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport ${EksEfsFileSystem}.efs.${AWS::Region}.amazonaws.com:/ ~/efs-mount
             git clone -b develop https://github.com/ActiveLearningStudio/curriki-eks.git
-            sed 's/substitute-me-efs-substitute-me/${EksEfsFileSystem}/g' /curriki-eks/yamls/api.yaml
             cp /curriki-eks/envs/.env.client.example /curriki-eks/envs/.env.local
             cp /curriki-eks/envs/.env.api.example /curriki-eks/envs/.env
             sudo kubectl create secret generic currikidev-api-secret --from-file=/curriki-eks/envs/.env
             sudo kubectl create secret generic currikidev-client-secret --from-file=/curriki-eks/envs/.env.local
-            sudo kubectl apply -f /curriki-eks/yamls/api.yaml
             sudo kubectl apply -f /curriki-eks/yamls/client.yaml
             curl -L https://istio.io/downloadIstio | ISTIO_VERSION=1.7.3 TARGET_ARCH=x86_64 sh -
             escaped=$(echo "${AcmCertArn}" | sed 's%/%\\/%g')
@@ -122,6 +116,13 @@ Resources:
             sudo /istio-1.7.3/bin/istioctl install --set profile=default -f /curriki-eks/yamls/istio-install.yaml
             sudo kubectl label namespace default istio-injection=enabled
             sudo kubectl apply -f /curriki-eks/yamls/istio.yaml
+
+        #sudo kubectl apply -f /curriki-eks/yamls/api.yaml
+        #sed 's/substitute-me-efs-substitute-me/${EksEfsFileSystem}/g' /curriki-eks/yamls/api.yaml
+        #mkdir ~/efs-mount
+        #wget ${S3BucketURL}/storage/storage.zip
+        #unzip storage.zip -d ~/efs-mount
+        #sudo mount -t nfs4 -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport ${EksEfsFileSystem}.efs.${AWS::Region}.amazonaws.com:/ ~/efs-mount
         # sudo /istio-1.7.3/bin/istioctl install --set profile=demo
   Ec2SecurityGroup:
     Type: AWS::EC2::SecurityGroup
