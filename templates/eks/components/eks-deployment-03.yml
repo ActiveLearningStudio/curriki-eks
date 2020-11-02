@@ -33,6 +33,9 @@ Parameters:
   DomainName:
     Type: String
     Description: Domain name without http/https (www.example.com or *.example.com)
+  AdminDomainName:
+    Type: String
+    Description: Domain name without http/https (for admin server). Should be same subdomain as DomainName.
   # ValidationDomainName:
   #   Type: String
   #   Description: Fully Qualified domain Name (www.example.com)
@@ -84,6 +87,7 @@ Resources:
   Ec2Instance:
     DependsOn:
       - EksEfsFileSystem
+      - Ec2SecurityGroup
       # - AcmCertArn
     Type: AWS::EC2::Instance
     Properties: 
@@ -100,22 +104,64 @@ Resources:
             apt upgrade -y && apt update -y
             apt install awscli nfs-common unzip -y
             snap install kubectl --classic
+
+            # set up AWS creds
             aws configure set aws_access_key_id ${AwsAccessKeyId} --profile default 
             aws configure set aws_secret_access_key ${AwsSecretAccessKey} --profile default
             aws eks update-kubeconfig --name ${ClusterName} --region ${AWS::Region}
+
+            # Pull down code
             git clone -b develop https://github.com/ActiveLearningStudio/curriki-eks.git
             cp /curriki-eks/envs/.env.client.example /curriki-eks/envs/.env.local
             cp /curriki-eks/envs/.env.api.example /curriki-eks/envs/.env
+
+            # Create k8s secrets
             sudo kubectl create secret generic currikidev-api-secret --from-file=/curriki-eks/envs/.env
             sudo kubectl create secret generic currikidev-client-secret --from-file=/curriki-eks/envs/.env.local
+            sudo kubectl create secret generic currikidev-admin-secret --from-file=/curriki-eks/envs/.env.admin
+            
+            # Deploy Client
             sudo kubectl apply -f /curriki-eks/yamls/client.yaml
+
+            # Download istioctl
             curl -L https://istio.io/downloadIstio | ISTIO_VERSION=1.7.3 TARGET_ARCH=x86_64 sh -
-            escaped=$(echo "${AcmCertArn}" | sed 's%/%\\/%g')
-            sed "s/substitute-me-acm-cert-substitute-me/$escaped/g" /curriki-eks/yamls/istio-install.yaml  > /curriki-eks/yamls/istio-install.yaml.new
+            
+            # Set up istio yaml file to use our ACM certificate.
+            escapedarn=$(echo "${AcmCertArn}" | sed 's%/%\\/%g')
+            sed "s/substitute-me-acm-cert-substitute-me/$escapedarn/g" /curriki-eks/yamls/istio-install.yaml  > /curriki-eks/yamls/istio-install.yaml.new
             mv /curriki-eks/yamls/istio-install.yaml.new /curriki-eks/yamls/istio-install.yaml
+            
+            # Install istio
             sudo /istio-1.7.3/bin/istioctl install --set profile=default -f /curriki-eks/yamls/istio-install.yaml
-            sudo kubectl label namespace default istio-injection=enabled
+            sudo kubectl label namespace default istio-injection=disabled  # we don't need istio injection.
+
+            # Configure istio ingress to route to api + admin.
             sudo kubectl apply -f /curriki-eks/yamls/istio.yaml
+
+            # Install kubernetes EFS driver
+            kubectl apply -k "github.com/kubernetes-sigs/aws-efs-csi-driver/deploy/kubernetes/overlays/stable/?ref=master"
+
+            # Create EFS mount targets for all subnets in the VPC
+            /curriki-eks/scripts/create_efs_mount_targets.sh $ClusterName $Ec2SecurityGroup $EksEfsFileSystem
+
+            # Substitute the EFS mount target into the API and Admin Yaml files
+            # Note: it's fine to use the same mount target but for different volumes.
+            sed 's/substitute-me-efs-substitute-me/${EksEfsFileSystem}/g' /curriki-eks/yamls/api.yaml > /curriki-eks/yamls/api.yaml.new
+            mv /curriki-eks/yamls/api.yaml.new /curriki-eks/yamls/api.yaml
+            sed 's/substitute-me-efs-substitute-me/${EksEfsFileSystem}/g' /curriki-eks/yamls/admin.yaml > /curriki-eks/yamls/admin.yaml.new
+            mv /curriki-eks/yamls/admin.yaml.new /curriki-eks/yamls/admin.yaml
+
+            # Substitute the hostnames into istio.yaml
+            sed 's/replace-me-curriki-host/${DomainName}/g' /curriki-eks/yamls/istio.yaml > /curriki-eks/yamls/istio.yaml.new
+            mv /curriki-eks/yamls/istio.yaml.new /curriki-eks/yamls/istio.yaml
+            sed 's/replace-me-curriki-host/${AdminDomainName}/g' /curriki-eks/yamls/istio.yaml > /curriki-eks/yamls/istio.yaml.new
+            mv /curriki-eks/yamls/istio.yaml.new /curriki-eks/yamls/istio.yaml
+
+            # Deploy the Admin and API
+            sudo kubectl apply -f /curriki-eks/yamls/admin.yaml
+            sudo kubectl apply -f /curriki-eks/yamls/api.yaml
+
+            # TODO: wait 5 min and then figure out how to check that pods came up properly.
 
         #sudo kubectl apply -f /curriki-eks/yamls/api.yaml
         #sed 's/substitute-me-efs-substitute-me/${EksEfsFileSystem}/g' /curriki-eks/yamls/api.yaml
@@ -232,10 +278,12 @@ Resources:
   #       - DomainName: !Ref ValidationDomainName
   #         HostedZoneId: !Ref HostedZoneId
   #     ValidationMethod: DNS
-  EksEfsTarget:
-    Type: AWS::EFS::MountTarget
-    Properties: 
-      FileSystemId: !Ref EksEfsFileSystem
-      SecurityGroups: 
-        - !Ref Ec2SecurityGroup
-      SubnetId: !Ref PublicSubnetId
+
+  # # I've commented this out because I'm creating the EFS Mount Targets in a bash script for now.
+  # EksEfsTarget:
+  #   Type: AWS::EFS::MountTarget
+  #   Properties: 
+  #     FileSystemId: !Ref EksEfsFileSystem
+  #     SecurityGroups: 
+  #       - !Ref Ec2SecurityGroup
+  #     SubnetId: !Ref PublicSubnetId

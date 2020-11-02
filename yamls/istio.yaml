@@ -27,7 +27,7 @@ metadata:
   name: curriki
 spec:
   hosts:
-  - "k8stest.currikistudio.org"
+  - "replace-me-curriki-host"
   gateways:
   - curriki-gateway
   http:
@@ -52,7 +52,7 @@ metadata:
   name: curriki-admin
 spec:
   hosts:
-  - "admink8stest.currikistudio.org"
+  - "replace-me-admin-curriki-host"
   gateways:
   - curriki-gateway
   http:

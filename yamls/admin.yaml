@@ -40,65 +40,65 @@ spec:
       - image: curriki/admin:test2.0.0
         imagePullPolicy: Always
         name: currikidev-admin
-        # envFrom:
-        #   - secretRef:
-        #       name: currikidev-admin-env
+        envFrom:
+          - secretRef:
+              name: currikidev-admin-env
         ports:
         - containerPort: 8000
-        # volumeMounts:
-        #   - mountPath: /var/www/html/storage
-        #     name: currikidev-admin-storage
-        #     readOnly: false
-        #   - mountPath: /var/www/html/env
-        #     name: "currikidev-admin-env"
-        #     readOnly: true
+        volumeMounts:
+          - mountPath: /var/www/html/storage
+            name: currikidev-admin-storage
+            readOnly: false
+          - mountPath: /var/www/html/env
+            name: "currikidev-admin-env"
+            readOnly: true
         resources: {}
       restartPolicy: Always
       serviceAccountName: ""
-#       volumes:
-#         - name: currikidev-admin-storage
-#           persistentVolumeClaim:
-#             claimName: currikidev-admin-storage
-#         - name: "currikidev-admin-env"
-#           secret:
-#             secretName: "currikidev-admin-env"
+      volumes:
+        - name: currikidev-admin-storage
+          persistentVolumeClaim:
+            claimName: currikidev-admin-storage
+        - name: "currikidev-admin-env"
+          secret:
+            secretName: "currikidev-admin-env"
 
 
-# ---
-# kind: StorageClass
-# apiVersion: storage.k8s.io/v1
-# metadata:
-#   name: efs-sc
-# provisioner: efs.csi.aws.com
+---
+kind: StorageClass
+apiVersion: storage.k8s.io/v1
+metadata:
+  name: efs-sc
+provisioner: efs.csi.aws.com
 
-# ---
-# apiVersion: v1
-# kind: PersistentVolume
-# metadata:
-#   name: laravel-storage-efs-pv
-# spec:
-#   capacity:
-#     storage: 500Gi
-#   volumeMode: Filesystem
-#   accessModes:
-#     - ReadWriteMany
-#   persistentVolumeReclaimPolicy: Retain
-#   storageClassName: efs-sc
-#   csi:
-#     driver: efs.csi.aws.com
-#     volumeHandle: substitute-me-efs-substitute-me
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: admin-storage-efs-pv
+spec:
+  capacity:
+    storage: 500Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: efs-sc
+  csi:
+    driver: efs.csi.aws.com
+    volumeHandle: substitute-me-efs-substitute-me
   
 
-# ---
-# apiVersion: v1
-# kind: PersistentVolumeClaim
-# metadata:
-#   name: currikidev-admin-storage
-# spec:
-#   accessModes:
-#     - ReadWriteMany
-#   storageClassName: efs-sc
-#   resources:
-#     requests:
-#       storage: 500Gi
-# ---
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: currikidev-admin-storage
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: efs-sc
+  resources:
+    requests:
+      storage: 500Gi
+---
