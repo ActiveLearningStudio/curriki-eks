@@ -4,8 +4,8 @@ kind: ConfigMap
 metadata:
   name: efs-provisioner
 data:
-  file.system.id: fs-30e97148
-  aws.region: us-east-2
+  file.system.id: substitute-me-efs-id
+  aws.region: substitute-me-efs-region
   provisioner.name: kubernetes.io/aws-efs
   dns.name: ""
 ---
@@ -57,7 +57,7 @@ spec:
       volumes:
         - name: pv-volume
           nfs:
-            server: fs-30e97148.efs.us-east-2.amazonaws.com
+            server: substitute-me-efs-dns-name
             path: /
 ---
 kind: StorageClass
@@ -89,7 +89,7 @@ spec:
     - noresvport
   nfs:
     path: /
-    server: fs-30e97148.efs.us-east-2.amazonaws.com
+    server: substitute-me-efs-dns-name
 ---
 kind: PersistentVolumeClaim
 apiVersion: v1
