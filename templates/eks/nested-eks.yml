@@ -149,6 +149,9 @@ Parameters:
   DomainName:
     Type: String
     Description: Domain name without http/https (www.example.com or *.example.com)
+  AdminDomainName:
+    Type: String
+    Description: Domain name (for admin console) without http/https (www.example.com or *.example.com)
   # ValidationDomainName:
   #   Type: String
   #   Description: Fully Qualified domain Name (www.example.com)
@@ -270,6 +273,7 @@ Resources:
         AwsSecretAccessKey: !Ref AwsSecretAccessKey
         HostedZoneId: !Ref HostedZoneId
         DomainName: !Ref DomainName
+        AdminDomainName: !Ref AdminDomainName
         # ValidationDomainName: !Ref ValidationDomainName
         S3BucketURL: !Ref S3BucketURL
         AcmCertArn: !Ref AcmCertArn
