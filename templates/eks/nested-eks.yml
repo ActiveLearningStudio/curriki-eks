@@ -294,8 +294,13 @@ Resources:
       Parameters:
         MyVPC: !GetAtt EksCluster.Outputs.VPC
         PrivateSubnets: !GetAtt EksCluster.Outputs.SubnetsPrivate
-        MyVPC: !GetAtt EksCluster.Outputs.VPC
         DatabaseInstanceType: !Ref DatabaseInstanceType
+        # DBSubnet1:
+        #   Ref: Subnet1
+        # DBSubnet2:
+        #   Ref: Subnet2
+        # DBSubnet3:
+        #   Ref: Subnet3
   LambdaRoleStack:
     Type: AWS::CloudFormation::Stack
     Properties:
