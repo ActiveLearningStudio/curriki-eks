@@ -7,8 +7,6 @@ Parameters:
     Type: AWS::EC2::VPC::Id
   S3Bucket:
     Type: String
-    Default: studio-eks
-    Description: Local Bucket where stack exists
   DataLoadFunctionLambdaS3Key:
     Type: String
     Default: lambda/DataLoadFunction.zip
