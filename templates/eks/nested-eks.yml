@@ -169,6 +169,7 @@ Parameters:
     Description: The Amazon RDS database instance class.
     ConstraintDescription: Must be a valid RDS instance class.
     AllowedValues:
+      - db.t2.small
       - db.r3.xlarge
       - db.r3.2xlarge
       - db.r3.4xlarge
@@ -293,12 +294,8 @@ Resources:
       Parameters:
         MyVPC: !GetAtt EksCluster.Outputs.VPC
         PrivateSubnets: !GetAtt EksCluster.Outputs.SubnetsPrivate
-        # DBSubnet1:
-        #   Ref: Subnet1
-        # DBSubnet2:
-        #   Ref: Subnet2
-        # DBSubnet3:
-        #   Ref: Subnet3
+        MyVPC: !GetAtt EksCluster.Outputs.VPC
+        DatabaseInstanceType: !Ref DatabaseInstanceType
   LambdaRoleStack:
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -316,6 +313,8 @@ Resources:
           - Outputs.LambdaRole
         MyVPC: !GetAtt EksCluster.Outputs.VPC
         PrivateSubnets: !GetAtt EksCluster.Outputs.SubnetsPrivate
+        S3Bucket: !Ref S3Bucket
+        DataLoadFunctionLambdaS3Key: !Ref DataLoadFunctionLambdaS3Key
         # DBSubnet1:
         #   Ref: Subnet1
         # DBSubnet2:
