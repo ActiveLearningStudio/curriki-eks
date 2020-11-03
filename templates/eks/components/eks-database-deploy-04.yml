@@ -13,6 +13,7 @@ Parameters:
     Description: The Amazon RDS database instance class.
     ConstraintDescription: Must be a valid RDS instance class.
     AllowedValues:
+      - db.t2.small
       - db.r3.xlarge
       - db.r3.2xlarge
       - db.r3.4xlarge
