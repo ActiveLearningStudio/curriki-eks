@@ -1,9 +1,23 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: 'EKS Deployment via EC2 Instance'
 Parameters:
-  PublicSubnetId:
+  AvailabilityZones:
+    Description: 'List of Availability Zones to use for the subnets in the VPC. Note:
+      The logical order is preserved.'
+    Type: List<AWS::EC2::AvailabilityZone::Name>
+  NumberOfAZs:
+    AllowedValues:
+    - 2
+    - 3
+    - 4
+    - 5
+    - 6
+    Description: Number of Availability Zones to use in the VPC. This must match your
+      selections in the list of Availability Zones parameter.
+    Type: Number
+  PublicSubnets:
     Type: String
-    Description: ID of Public Subnet
+    Description: ID of Public Subnets
   SSHKeyPair:
     Description: Ec2 Keypair Name
     Type: AWS::EC2::KeyPair::KeyName
@@ -27,6 +41,20 @@ Parameters:
     Type: String
     Description: AWS Secret Access Key
     NoEcho: "true"
+  Ec2SecurityGroupId: 
+    Type: String
+Conditions:
+  CreateTwoTargets:
+    !Equals [ '2', !Ref NumberOfAZs ]
+    
+  CreateThreeTargets:
+    !Equals [ '3', !Ref NumberOfAZs ]
+
+  CreateFourTargets:
+    Fn::Or:
+    - !Equals [ '4', !Ref NumberOfAZs ]
+    - !Equals [ '5', !Ref NumberOfAZs ]
+    - !Equals [ '6', !Ref NumberOfAZs ]
   HostedZoneId:
     Type: String
     Description: Route53 hosted zone id
@@ -91,8 +119,8 @@ Resources:
       InstanceType: t2.micro
       KeyName: !Ref SSHKeyPair
       SecurityGroupIds: 
-        - !Ref Ec2SecurityGroup
-      SubnetId: !Ref PublicSubnetId
+        - !Ref Ec2SecurityGroupId
+      SubnetId: !Select [0, !Split [',', !Ref PublicSubnets]]
       UserData: 
         Fn::Base64: 
           !Sub |
@@ -104,11 +132,16 @@ Resources:
             aws configure set aws_secret_access_key ${AwsSecretAccessKey} --profile default
             aws eks update-kubeconfig --name ${ClusterName} --region ${AWS::Region}
             git clone -b develop https://github.com/ActiveLearningStudio/curriki-eks.git
+            sed -i 's/substitute-me-efs-id/${EksEfsFileSystem}/g' /curriki-eks/yamls/efs-provisioner.yml
+            sed -i 's/substitute-me-efs-region/${AWS::Region}/g' /curriki-eks/yamls/efs-provisioner.yml
+            sed -i 's/substitute-me-efs-dns-name/${EksEfsFileSystem}.efs.${AWS::Region}.amazonaws.com/g' /curriki-eks/yamls/efs-provisioner.yml
             cp /curriki-eks/envs/.env.client.example /curriki-eks/envs/.env.local
             cp /curriki-eks/envs/.env.api.example /curriki-eks/envs/.env
             sudo kubectl create secret generic currikidev-api-secret --from-file=/curriki-eks/envs/.env
             sudo kubectl create secret generic currikidev-client-secret --from-file=/curriki-eks/envs/.env.local
             sudo kubectl apply -k "github.com/kubernetes-sigs/aws-efs-csi-driver/deploy/kubernetes/overlays/stable/?ref=master"
+            sudo kubectl apply -f /curriki-eks/yamls/rbac.yml
+            sudo kubectl apply -f /curriki-eks/yamls/efs-provisioner.yml
             sudo kubectl apply -f /curriki-eks/yamls/api.yaml
             sudo kubectl apply -f /curriki-eks/yamls/client.yaml
             curl -L https://istio.io/downloadIstio | ISTIO_VERSION=1.7.3 TARGET_ARCH=x86_64 sh -
@@ -118,102 +151,6 @@ Resources:
             sudo /istio-1.7.3/bin/istioctl install --set profile=default -f /curriki-eks/yamls/istio-install.yaml
             sudo kubectl label namespace default istio-injection=enabled
             sudo kubectl apply -f /curriki-eks/yamls/istio.yaml
-
-        #sudo kubectl apply -f /curriki-eks/yamls/api.yaml
-        #sed 's/substitute-me-efs-substitute-me/${EksEfsFileSystem}/g' /curriki-eks/yamls/api.yaml
-        #mkdir ~/efs-mount
-        #wget ${S3BucketURL}/storage/storage.zip
-        #unzip storage.zip -d ~/efs-mount
-        #sudo mount -t nfs4 -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport ${EksEfsFileSystem}.efs.${AWS::Region}.amazonaws.com:/ ~/efs-mount
-        # sudo /istio-1.7.3/bin/istioctl install --set profile=demo
-  Ec2SecurityGroup:
-    Type: AWS::EC2::SecurityGroup
-    Properties:
-      GroupDescription: Enable SSH Access via Port 22.
-      VpcId: !Ref VpcId
-      SecurityGroupIngress:
-      - IpProtocol: tcp
-        FromPort: '8080'
-        ToPort: '8080'
-        CidrIp: 0.0.0.0/0
-      - IpProtocol: tcp
-        FromPort: '22'
-        ToPort: '22'
-        CidrIp: 0.0.0.0/0
-      - IpProtocol: tcp
-        FromPort: '2049'
-        ToPort: '2049'
-        CidrIp: 0.0.0.0/0
-      Tags:
-      - Key: Name
-        Value: !Sub ${AWS::StackName}-EksDeploymentSG
-  
-  # DatabaseSecurityGroup: 
-  #   Type: "AWS::EC2::SecurityGroup"
-  #   Properties: 
-  #     GroupDescription: "Postgres DB Security Group"
-  #     SecurityGroupIngress: 
-  #       - 
-  #         CidrIp: !Ref VpcCidrBlock
-  #         FromPort: "5432"
-  #         IpProtocol: tcp
-  #         ToPort: "5432"
-  #     Tags: 
-  #       - 
-  #         Key: Name
-  #         Value: 
-  #           ? "Fn::Join"
-  #           : 
-  #             - "-"
-  #             - 
-  #               - 
-  #                 Ref: ClusterName
-  #               - rds
-  #     VpcId: !Ref VpcId
-    
-  # DatabaseSubnetGroup: 
-  #   Type: "AWS::RDS::DBSubnetGroup"
-  #   Properties: 
-  #     DBSubnetGroupDescription: "DB Subnet Group"
-  #     SubnetIds: 
-  #       Fn::Split:
-  #       - ","
-  #       - !Ref PrivateSubnets
-  #     Tags: 
-  #       - 
-  #         Key: Name
-  #         Value: "rds-db-SubnetGroup"
-    
-  # RDSDBInstance: 
-  #   Type: "AWS::RDS::DBInstance"
-  #   DeletionPolicy: Snapshot
-  #   Properties: 
-  #     AllocatedStorage: "20"
-  #     AllowMajorVersionUpgrade: "false"
-  #     AutoMinorVersionUpgrade: "true"
-  #     BackupRetentionPeriod: "7"
-  #     CopyTagsToSnapshot: true
-  #     DBInstanceClass: 
-  #       Ref: DatabaseInstanceType
-  #     DBInstanceIdentifier: !Sub "${ClusterName}-rds"
-  #     DBName: !Sub "${ClusterName}_rds"
-  #     DBSubnetGroupName:
-  #       Ref: DatabaseSubnetGroup
-  #     Engine: postgres
-  #     EngineVersion: 
-  #       Ref: PGVersion
-  #     MasterUserPassword: 
-  #       Ref: DatabasePassword
-  #     MasterUsername: 
-  #       Ref: DatabaseUsername
-  #     MultiAZ: 
-  #       Ref: MultiAZ
-  #     PreferredBackupWindow: "05:00-05:30"
-  #     PreferredMaintenanceWindow: "mon:06:00-mon:06:30"
-  #     PubliclyAccessible: false
-  #     StorageType: gp2
-  #     VPCSecurityGroups:
-  #       - Ref: DatabaseSecurityGroup
 
   EksEfsFileSystem:
     Type: AWS::EFS::FileSystem
@@ -226,18 +163,41 @@ Resources:
           Value: EksEfsFileSystem
       LifecyclePolicies: 
         - TransitionToIA: AFTER_30_DAYS
-  # AcmCertArn:
-  #   Type: AWS::CertificateManager::Certificate
-  #   Properties:
-  #     DomainName: !Ref DomainName
-  #     DomainValidationOptions:
-  #       - DomainName: !Ref ValidationDomainName
-  #         HostedZoneId: !Ref HostedZoneId
-  #     ValidationMethod: DNS
-  EksEfsTarget:
+  EksEfsTargetA:
     Type: AWS::EFS::MountTarget
     Properties: 
       FileSystemId: !Ref EksEfsFileSystem
       SecurityGroups: 
-        - !Ref Ec2SecurityGroup
-      SubnetId: !Ref PublicSubnetId
+        - !Ref Ec2SecurityGroupId
+      SubnetId: !Select [0, !Split [',', !Ref PublicSubnets]]
+  EksEfsTargetB:
+    Type: AWS::EFS::MountTarget
+    Properties: 
+      FileSystemId: !Ref EksEfsFileSystem
+      SecurityGroups: 
+        - !Ref Ec2SecurityGroupId
+      SubnetId: !Select [1, !Split [',', !Ref PublicSubnets]]
+  EksEfsTargetC3:
+    Condition: CreateThreeTargets
+    Type: AWS::EFS::MountTarget
+    Properties: 
+      FileSystemId: !Ref EksEfsFileSystem
+      SecurityGroups: 
+        - !Ref Ec2SecurityGroupId
+      SubnetId: !Select [2, !Split [',', !Ref PublicSubnets]]
+  EksEfsTargetC4:
+    Condition: CreateFourTargets
+    Type: AWS::EFS::MountTarget
+    Properties: 
+      FileSystemId: !Ref EksEfsFileSystem
+      SecurityGroups: 
+        - !Ref Ec2SecurityGroupId
+      SubnetId: !Select [2, !Split [',', !Ref PublicSubnets]]
+  EksEfsTargetD:
+    Condition: CreateFourTargets
+    Type: AWS::EFS::MountTarget
+    Properties: 
+      FileSystemId: !Ref EksEfsFileSystem
+      SecurityGroups: 
+        - !Ref Ec2SecurityGroupId
+      SubnetId: !Select [3, !Split [',', !Ref PublicSubnets]]

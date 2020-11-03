@@ -260,12 +260,17 @@ Resources:
     Type: AWS::CloudFormation::Stack
     Properties: 
       Parameters:
-        PublicSubnetId: !Select [0, !Split [',', !GetAtt EksCluster.Outputs.SubnetsPublic]]
+        PublicSubnets: !GetAtt EksCluster.Outputs.SubnetsPublic
         SSHKeyPair: !Ref SSHKeyPair
         VpcId: !GetAtt EksCluster.Outputs.VPC
         ClusterName: !Ref ClusterName
         AwsAccessKeyId: !Ref AwsAccessKeyId
         AwsSecretAccessKey: !Ref AwsSecretAccessKey
+        AvailabilityZones: 
+          !Join
+            - ','
+            - !Ref AvailabilityZones
+        NumberOfAZs: !Ref NumberOfAZs
         HostedZoneId: !Ref HostedZoneId
         DomainName: !Ref DomainName
         # ValidationDomainName: !Ref ValidationDomainName
@@ -278,6 +283,7 @@ Resources:
         # PGVersion: !Ref PGVersion
         # PrivateSubnets: !GetAtt EksCluster.Outputs.SubnetsPrivate
         VpcCidrBlock: !Ref VpcCidrBlock
+        Ec2SecurityGroupId: !GetAtt EksCluster.Outputs.Ec2SecurityGroupId
       TemplateURL: https://studio-eks.s3.amazonaws.com/templates/eks/components/eks-deployment-03.yml
   dbStack:
     Type: AWS::CloudFormation::Stack
