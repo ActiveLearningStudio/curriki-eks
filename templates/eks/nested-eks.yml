@@ -58,9 +58,9 @@ Parameters:
   EksVersion:
     Type: String
     Description: EKS Version
-    # AllowedValues:
-    #   - "1.17"
-    #   - "1.18"
+    AllowedValues:
+    - "1.17"
+    - "1.18"
   EbsDiskSize:
     Type: Number
     Description: Size of EBS Volume to be attached with worker nodes
@@ -143,6 +143,46 @@ Parameters:
     Type: String
     Description: AWS Secret Access Key
     NoEcho: "true"
+  HostedZoneId:
+    Type: String
+    Description: Route53 hosted zone id
+  DomainName:
+    Type: String
+    Description: Domain name without http/https (www.example.com or *.example.com)
+  # ValidationDomainName:
+  #   Type: String
+  #   Description: Fully Qualified domain Name (www.example.com)
+  S3BucketURL:
+    Type: String
+    Description: S3 Bucket URL
+  S3Bucket:
+    Type: String
+    Default: studio-eks
+    Description: Local Bucket where stack exists
+  DataLoadFunctionLambdaS3Key:
+    Type: String
+    Default: lambda/DataLoadFunction.zip
+    Description: DataLoadFunction.zip File in bucket
+  DatabaseInstanceType:
+    Type: String
+    Default: db.t3.xlarge
+    Description: The Amazon RDS database instance class.
+    ConstraintDescription: Must be a valid RDS instance class.
+    AllowedValues:
+      - db.r3.xlarge
+      - db.r3.2xlarge
+      - db.r3.4xlarge
+      - db.r3.8xlarge
+      - db.r4.large
+      - db.r4.xlarge
+      - db.r4.2xlarge
+      - db.r4.4xlarge
+      - db.r4.8xlarge
+      - db.r4.16xlarge
+      - db.t3.xlarge
+  AcmCertArn:
+    Type: String
+    Description: Arn
   # DatabaseInstanceType: 
   #   AllowedValues: 
   #     - db.t2.micro
@@ -226,6 +266,11 @@ Resources:
         ClusterName: !Ref ClusterName
         AwsAccessKeyId: !Ref AwsAccessKeyId
         AwsSecretAccessKey: !Ref AwsSecretAccessKey
+        HostedZoneId: !Ref HostedZoneId
+        DomainName: !Ref DomainName
+        # ValidationDomainName: !Ref ValidationDomainName
+        S3BucketURL: !Ref S3BucketURL
+        AcmCertArn: !Ref AcmCertArn
         # DatabaseInstanceType: !Ref DatabaseInstanceType
         # DatabasePassword: !Ref DatabasePassword
         # DatabaseUsername: !Ref DatabaseUsername
