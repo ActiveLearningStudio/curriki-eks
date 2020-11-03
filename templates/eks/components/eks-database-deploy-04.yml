@@ -27,7 +27,7 @@ Resources:
       DBSubnetGroupName:
         Ref: DBSubnetGroup
       Engine: postgres
-      EngineVersion: '11.2'
+      EngineVersion: '11.8'
       MasterUsername:
         Fn::Sub: "{{resolve:secretsmanager:${MyRDSInstanceRotationSecret}::username}}"
       MasterUserPassword:

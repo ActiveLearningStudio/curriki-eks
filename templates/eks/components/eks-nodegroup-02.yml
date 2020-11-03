@@ -237,6 +237,36 @@ Resources:
         Fn::Sub: "${AWS::StackName}-PolicyALBIngress"
       Roles:
       - Ref: NodeInstanceRole
+  PolicyEFSAccess:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Statement:
+        - Action:
+          - elasticfilesystem:DescribeMountTargets
+          - elasticfilesystem:DescribeTags
+          - elasticfilesystem:CreateMountTarget
+          - elasticfilesystem:DescribeLifecycleConfiguration
+          - elasticfilesystem:DescribeFileSystemPolicy
+          - elasticfilesystem:PutLifecycleConfiguration
+          - elasticfilesystem:DescribeFileSystems
+          - elasticfilesystem:DeleteMountTarget
+          - elasticfilesystem:DeleteFileSystem
+          - elasticfilesystem:UpdateFileSystem
+          Effect: Allow
+          Resource:
+          - !Sub 'arn:aws:elasticfilesystem:*:${AWS::AccountId}:access-point/*'
+          - !Sub 'arn:aws:elasticfilesystem:*:${AWS::AccountId}:file-system/*'
+        - Action: 
+          - elasticfilesystem:ModifyMountTargetSecurityGroups
+          - elasticfilesystem:DescribeMountTargetSecurityGroups
+          Effect: Allow
+          Resource: '*'
+        Version: '2012-10-17'
+      PolicyName:
+        Fn::Sub: "${AWS::StackName}-PolicyEFSAccess"
+      Roles:
+      - Ref: NodeInstanceRole
   PolicyAutoScaling:
     Type: AWS::IAM::Policy
     Properties:

@@ -92,6 +92,7 @@ Resources:
       ResourcesVpcConfig:
         SecurityGroupIds:
         - Ref: ControlPlaneSecurityGroup
+        - Ref: Ec2SecurityGroup
         SubnetIds: !If [ CreateTwoSubnets, [!Ref SubnetPublic1A, !Ref SubnetPublic1B, !Ref SubnetPrivate1A, !Ref SubnetPrivate1B], !If [ CreateThreeSubnets, [!Ref SubnetPublic1A, !Ref SubnetPublic1B, !Ref SubnetPublic1C3, !Ref SubnetPrivate1A, !Ref SubnetPrivate1B, !Ref SubnetPrivate1C3], [!Ref SubnetPublic1A, !Ref SubnetPublic1B, !Ref SubnetPublic1C, !Ref SubnetPublic1D, !Ref SubnetPrivate1A, !Ref SubnetPrivate1B, !Ref SubnetPrivate1C, !Ref SubnetPrivate1D] ]]
       RoleArn:
         Fn::GetAtt:
@@ -571,6 +572,27 @@ Resources:
         Ref: InternetGateway
       VpcId:
         Ref: VPC
+  Ec2SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Enable SSH Access via Port 22.
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+      - IpProtocol: tcp
+        FromPort: '8080'
+        ToPort: '8080'
+        CidrIp: 0.0.0.0/0
+      - IpProtocol: tcp
+        FromPort: '22'
+        ToPort: '22'
+        CidrIp: 0.0.0.0/0
+      - IpProtocol: tcp
+        FromPort: '2049'
+        ToPort: '2049'
+        CidrIp: 0.0.0.0/0
+      Tags:
+      - Key: Name
+        Value: !Sub ${AWS::StackName}-EksDeploymentSG
 Outputs:
   ARN:
     Export:
@@ -580,6 +602,9 @@ Outputs:
       Fn::GetAtt:
       - ControlPlane
       - Arn
+  Ec2SecurityGroupId:
+    Value: !Ref Ec2SecurityGroup
+    Description: Id of Security Group for EKS Deployment
   CertificateAuthorityData:
     Value:
       Fn::GetAtt:
