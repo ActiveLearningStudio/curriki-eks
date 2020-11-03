@@ -9,13 +9,10 @@ Parameters:
     Type: AWS::EC2::VPC::Id
   DatabaseInstanceType:
     Type: String
-    Default: db.t2.medium
+    Default: db.t3.xlarge
     Description: The Amazon RDS database instance class.
     ConstraintDescription: Must be a valid RDS instance class.
     AllowedValues:
-      - db.t2.small
-      - db.t2.medium
-      - db.r3.large
       - db.r3.xlarge
       - db.r3.2xlarge
       - db.r3.4xlarge
@@ -26,6 +23,7 @@ Parameters:
       - db.r4.4xlarge
       - db.r4.8xlarge
       - db.r4.16xlarge
+      - db.t3.xlarge
   PrivateSubnets:
     Type: String
 Resources:
