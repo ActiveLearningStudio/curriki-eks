@@ -56,10 +56,15 @@ spec:
           - mountPath: /var/www/html/env
             name: "currikidev-api-secret"
             readOnly: true
-         lifecycle:
-            postStart:
-              exec:
-                command: ["/bin/sh", "-c", "php artisan key:generate"]
+        lifecycle:
+          postStart:
+            exec:
+              command: 
+                - "/bin/sh"
+                - "-c"
+                - >
+                  php artisan key:generate;
+                  php artisan config:cache;
         resources: {}
       restartPolicy: Always
       serviceAccountName: ""
