@@ -56,6 +56,10 @@ spec:
           - mountPath: /var/www/html/env
             name: "currikidev-api-secret"
             readOnly: true
+         lifecycle:
+            postStart:
+              exec:
+                command: ["/bin/sh", "-c", "php artisan key:generate"]
         resources: {}
       restartPolicy: Always
       serviceAccountName: ""

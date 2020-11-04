@@ -16,6 +16,9 @@ Parameters:
     Description: Number of Availability Zones to use in the VPC. This must match your
       selections in the list of Availability Zones parameter.
     Type: Number
+  LaravelAppUrl:
+    Type: String
+    Description: Laravel App Url
   VpcCidrBlock:
     Type: String
     Description: CIDR Block for VPC

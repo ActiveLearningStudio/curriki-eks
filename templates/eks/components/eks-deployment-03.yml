@@ -49,6 +49,14 @@ Parameters:
   AcmCertArn:
     Type: String
     Description: Arn
+  LaravelAppUrl:
+    Type: String
+    Description: Laravel App Url
+    Default: https://k8s.currikistudio.org/api
+  LaravelFrontEndUrl:
+    Type: String
+    Description: Laravel Frontend App Url
+    Default: https://k8s.currikistudio.org
 Conditions:
   CreateTwoTargets:
     !Equals [ '2', !Ref NumberOfAZs ]
