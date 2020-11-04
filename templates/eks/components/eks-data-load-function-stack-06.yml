@@ -9,14 +9,7 @@ Parameters:
     Type: String
   DataLoadFunctionLambdaS3Key:
     Type: String
-    Default: lambda/DataLoadFunction.zip
     Description: DataLoadFunction.zip File in bucket
-  # DBSubnet1:
-  #   Type: AWS::EC2::Subnet::Id
-  # DBSubnet2:
-  #   Type: AWS::EC2::Subnet::Id
-  # DBSubnet3:
-  #   Type: AWS::EC2::Subnet::Id
   PrivateSubnets:
     Type: String
 Resources:
@@ -27,7 +20,7 @@ Resources:
       MemorySize: 3008
       # TODO: Remove hard coded bucket
       Code:
-        S3Bucket: !Ref S3Bucket #studio-eks
+        S3Bucket: !Ref S3Bucket
         S3Key: !Ref DataLoadFunctionLambdaS3Key
       Role:
         Ref: RoleARN
