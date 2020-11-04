@@ -43,6 +43,12 @@ Parameters:
     NoEcho: "true"
   Ec2SecurityGroupId: 
     Type: String
+  S3BucketURL:
+    Type: String
+    Description: S3 Bucket URL
+  AcmCertArn:
+    Type: String
+    Description: Arn
 Conditions:
   CreateTwoTargets:
     !Equals [ '2', !Ref NumberOfAZs ]
@@ -55,21 +61,7 @@ Conditions:
     - !Equals [ '4', !Ref NumberOfAZs ]
     - !Equals [ '5', !Ref NumberOfAZs ]
     - !Equals [ '6', !Ref NumberOfAZs ]
-  HostedZoneId:
-    Type: String
-    Description: Route53 hosted zone id
-  DomainName:
-    Type: String
-    Description: Domain name without http/https (www.example.com or *.example.com)
-  # ValidationDomainName:
-  #   Type: String
-  #   Description: Fully Qualified domain Name (www.example.com)
-  S3BucketURL:
-    Type: String
-    Description: S3 Bucket URL
-  AcmCertArn:
-    Type: String
-    Description: Arn
+  
   # DatabaseInstanceType: 
   #   AllowedValues: 
   #     - db.t2.micro
@@ -148,7 +140,7 @@ Resources:
             escaped=$(echo "${AcmCertArn}" | sed 's%/%\\/%g')
             sed "s/substitute-me-acm-cert-substitute-me/$escaped/g" /curriki-eks/yamls/istio-install.yaml  > /curriki-eks/yamls/istio-install.yaml.new
             mv /curriki-eks/yamls/istio-install.yaml.new /curriki-eks/yamls/istio-install.yaml
-            sudo /istio-1.7.3/bin/istioctl install --set profile=default -f /curriki-eks/yamls/istio-install.yaml
+            sudo /istio-1.7.3/bin/istioctl install --set profile=demo -f /curriki-eks/yamls/istio-install.yaml
             sudo kubectl label namespace default istio-injection=enabled
             sudo kubectl apply -f /curriki-eks/yamls/istio.yaml
 
