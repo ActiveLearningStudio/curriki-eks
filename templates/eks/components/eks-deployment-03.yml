@@ -62,44 +62,6 @@ Conditions:
     - !Equals [ '5', !Ref NumberOfAZs ]
     - !Equals [ '6', !Ref NumberOfAZs ]
   
-  # DatabaseInstanceType: 
-  #   AllowedValues: 
-  #     - db.t2.micro
-  #     - db.t2.small
-  #     - db.r3.large
-  #     - db.r3.xlarge
-  #     - db.r3.2xlarge
-  #     - db.r3.4xlarge
-  #     - db.r3.8xlarge
-  #   Default: db.t2.micro
-  #   Description: "The instance type to use for the database."
-  #   Type: String
-  # DatabasePassword: 
-  #   Description: "The database admin account password."
-  #   MaxLength: "41"
-  #   MinLength: "8"
-  #   NoEcho: "true"
-  #   Type: String
-  # DatabaseUsername: 
-  #   AllowedPattern: "[a-zA-Z0-9]+"
-  #   ConstraintDescription: "must contain only alphanumeric characters."
-  #   Default: awsmaster
-  #   Description: "The database admin account user name."
-  #   MaxLength: "16"
-  #   MinLength: "1"
-  #   Type: String
-  # MultiAZ: 
-  #   AllowedValues: 
-  #     - true
-  #     - false
-  #   Description: "Multi AZ setup for database"
-  #   Type: String
-  # PGVersion: 
-  #   Default: "9.6"
-  #   Description: "PostgreSQL Version"
-  #   Type: String
-  # PrivateSubnets:
-  #   Type: String
 Resources:
   Ec2Instance:
     DependsOn:
@@ -123,6 +85,10 @@ Resources:
             aws configure set aws_access_key_id ${AwsAccessKeyId} --profile default 
             aws configure set aws_secret_access_key ${AwsSecretAccessKey} --profile default
             aws eks update-kubeconfig --name ${ClusterName} --region ${AWS::Region}
+            mkdir ~/efs-mount
+            wget https://currikieks.s3-us-west-1.amazonaws.com/quickstart-amazon-eks.zip
+            unzip quickstart-amazon-eks.zip -d ~/efs-mount
+            sudo mount -t nfs4 -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport ${EksEfsFileSystem}.efs.${AWS::Region}.amazonaws.com:/ ~/efs-mount
             git clone -b develop https://github.com/ActiveLearningStudio/curriki-eks.git
             sed -i 's/substitute-me-efs-id/${EksEfsFileSystem}/g' /curriki-eks/yamls/efs-provisioner.yml
             sed -i 's/substitute-me-efs-region/${AWS::Region}/g' /curriki-eks/yamls/efs-provisioner.yml
@@ -137,7 +103,7 @@ Resources:
             sudo kubectl apply -f /curriki-eks/yamls/api.yaml
             sudo kubectl apply -f /curriki-eks/yamls/client.yaml
             curl -L https://istio.io/downloadIstio | ISTIO_VERSION=1.7.3 TARGET_ARCH=x86_64 sh -
-            escaped=$(echo "${AcmCertArn}" | sed 's%/%\\/%g')
+            escaped=$(echo ${AcmCertArn} | sed 's%/%\\/%g')
             sed "s/substitute-me-acm-cert-substitute-me/$escaped/g" /curriki-eks/yamls/istio-install.yaml  > /curriki-eks/yamls/istio-install.yaml.new
             mv /curriki-eks/yamls/istio-install.yaml.new /curriki-eks/yamls/istio-install.yaml
             sudo /istio-1.7.3/bin/istioctl install --set profile=demo -f /curriki-eks/yamls/istio-install.yaml

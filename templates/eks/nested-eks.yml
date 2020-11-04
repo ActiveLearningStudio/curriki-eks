@@ -175,42 +175,6 @@ Parameters:
   AcmCertArn:
     Type: String
     Description: Arn
-  # DatabaseInstanceType: 
-  #   AllowedValues: 
-  #     - db.t2.micro
-  #     - db.t2.small
-  #     - db.r3.large
-  #     - db.r3.xlarge
-  #     - db.r3.2xlarge
-  #     - db.r3.4xlarge
-  #     - db.r3.8xlarge
-  #   Default: db.t2.micro
-  #   Description: "The instance type to use for the database."
-  #   Type: String
-  # DatabasePassword: 
-  #   Description: "The database admin account password."
-  #   MaxLength: "41"
-  #   MinLength: "8"
-  #   NoEcho: "true"
-  #   Type: String
-  # DatabaseUsername: 
-  #   AllowedPattern: "[a-zA-Z0-9]+"
-  #   ConstraintDescription: "must contain only alphanumeric characters."
-  #   Default: awsmaster
-  #   Description: "The database admin account user name."
-  #   MaxLength: "16"
-  #   MinLength: "1"
-  #   Type: String
-  # MultiAZ: 
-  #   AllowedValues: 
-  #     - true
-  #     - false
-  #   Description: "Multi AZ setup for database"
-  #   Type: String
-  # PGVersion: 
-  #   Default: "9.6"
-  #   Description: "PostgreSQL Version"
-  #   Type: String
 Resources:
   EksCluster:
     Type: AWS::CloudFormation::Stack
@@ -265,12 +229,6 @@ Resources:
         NumberOfAZs: !Ref NumberOfAZs
         S3BucketURL: !Ref S3BucketURL
         AcmCertArn: !Ref AcmCertArn
-        # DatabaseInstanceType: !Ref DatabaseInstanceType
-        # DatabasePassword: !Ref DatabasePassword
-        # DatabaseUsername: !Ref DatabaseUsername
-        # MultiAZ: !Ref MultiAZ
-        # PGVersion: !Ref PGVersion
-        # PrivateSubnets: !GetAtt EksCluster.Outputs.SubnetsPrivate
         VpcCidrBlock: !Ref VpcCidrBlock
         Ec2SecurityGroupId: !GetAtt EksCluster.Outputs.Ec2SecurityGroupId
       TemplateURL: https://studio-eks.s3.amazonaws.com/templates/eks/components/eks-deployment-03.yml
@@ -308,12 +266,6 @@ Resources:
         PrivateSubnets: !GetAtt EksCluster.Outputs.SubnetsPrivate
         S3Bucket: !Ref S3Bucket
         DataLoadFunctionLambdaS3Key: !Ref DataLoadFunctionLambdaS3Key
-        # DBSubnet1:
-        #   Ref: Subnet1
-        # DBSubnet2:
-        #   Ref: Subnet2
-        # DBSubnet3:
-        #   Ref: Subnet3
   DBDataLoad:
     Type: AWS::CloudFormation::Stack
     Properties:
