@@ -244,7 +244,9 @@ Resources:
         PublicSubnets: !GetAtt EksCluster.Outputs.SubnetsPublic
       TemplateURL: https://studio-eks.s3.amazonaws.com/templates/eks/components/eks-nodegroup-02.yml
   EksDeployment:
-    DependsOn: EksNodeGroup
+    DependsOn: 
+      - EksNodeGroup
+      - DbStack
     Type: AWS::CloudFormation::Stack
     Properties: 
       Parameters:
@@ -273,7 +275,7 @@ Resources:
         ReactAppHubspot: !Ref ReactAppHubspot
         ReactAppH5PKey: !Ref ReactAppH5PKey
       TemplateURL: https://studio-eks.s3.amazonaws.com/templates/eks/components/eks-deployment-03.yml
-  dbStack:
+  DbStack:
     Type: AWS::CloudFormation::Stack
     Properties:
       TemplateURL: https://studio-eks.s3.amazonaws.com/templates/eks/components/eks-database-deploy-04.yml
@@ -289,11 +291,13 @@ Resources:
         # DBSubnet3:
         #   Ref: Subnet3
   LambdaRoleStack:
+    DependsOn: DbStack
     Type: AWS::CloudFormation::Stack
     Properties:
       TemplateURL: https://studio-eks.s3.amazonaws.com/templates/eks/components/eks-lambda-role-stack-05.yml
       TimeoutInMinutes: 60
   DataLoadFunctionStack:
+    DependsOn: DbStack
     Type: AWS::CloudFormation::Stack
     Properties:
       TemplateURL: https://studio-eks.s3.amazonaws.com/templates/eks/components/eks-data-load-function-stack-06.yml
@@ -308,6 +312,7 @@ Resources:
         S3Bucket: !Ref S3Bucket
         DataLoadFunctionLambdaS3Key: !Ref DataLoadFunctionLambdaS3Key
   DBDataLoad:
+    DependsOn: DbStack
     Type: AWS::CloudFormation::Stack
     Properties:
       TemplateURL: https://studio-eks.s3.amazonaws.com/templates/eks/components/eks-custom-resource-07.yml
@@ -315,7 +320,7 @@ Resources:
       Parameters:
         DatabaseURL:
           Fn::GetAtt:
-          - dbStack
+          - DbStack
           - Outputs.EndpointURL
         FunctionARN:
           Fn::GetAtt:

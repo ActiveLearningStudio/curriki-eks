@@ -126,16 +126,34 @@ Resources:
             sed -i 's/substitute-me-efs-region/${AWS::Region}/g' /curriki-eks/yamls/efs-provisioner.yml
             sed -i 's/substitute-me-efs-dns-name/${EksEfsFileSystem}.efs.${AWS::Region}.amazonaws.com/g' /curriki-eks/yamls/efs-provisioner.yml
             cp /curriki-eks/envs/.env.client.example /curriki-eks/envs/.env.local
-            sed -i 's/reactapppexelapi/${ReactAppPexelAPI}/g' /curriki-eks/envs/.env.local
-            sed -i 's/reactappapiurl/${ReactAppApiUrl}/g' /curriki-eks/envs/.env.local
-            sed -i 's/reactappresourceurl/${ReactAppResourceUrl}/g' /curriki-eks/envs/.env.local
-            sed -i 's/reactappgooglecaptcha/${ReactAppGoogleCaptcha}/g' /curriki-eks/envs/.env.local
-            sed -i 's/reactappgoogleapiclientid/${ReactAppGoogleApiClientId}/g' /curriki-eks/envs/.env.local
-            sed -i 's/reactapphubspot/${ReactAppHubspot}/g' /curriki-eks/envs/.env.local
-            sed -i 's/reactapph5pkey/${ReactAppH5PKey}/g' /curriki-eks/envs/.env.local
+            escaped=$(echo ${ReactAppPexelAPI} | sed 's%/%\\/%g')
+            sed "s/reactapppexelapi/$escaped/g" /curriki-eks/envs/.env.local  > /curriki-eks/envs/.env.local.new
+            mv /curriki-eks/envs/.env.local.new /curriki-eks/envs/.env.local
+            escaped=$(echo ${ReactAppApiUrl} | sed 's%/%\\/%g')
+            sed "s/reactappapiurl/$escaped/g" /curriki-eks/envs/.env.local  > /curriki-eks/envs/.env.local.new
+            mv /curriki-eks/envs/.env.local.new /curriki-eks/envs/.env.local
+            escaped=$(echo ${ReactAppResourceUrl} | sed 's%/%\\/%g')
+            sed "s/reactappresourceurl/$escaped/g" /curriki-eks/envs/.env.local  > /curriki-eks/envs/.env.local.new
+            mv /curriki-eks/envs/.env.local.new /curriki-eks/envs/.env.local
+            escaped=$(echo ${ReactAppGoogleCaptcha} | sed 's%/%\\/%g')
+            sed "s/reactappgooglecaptcha/$escaped/g" /curriki-eks/envs/.env.local  > /curriki-eks/envs/.env.local.new
+            mv /curriki-eks/envs/.env.local.new /curriki-eks/envs/.env.local
+            escaped=$(echo ${ReactAppGoogleApiClientId} | sed 's%/%\\/%g')
+            sed "s/reactappgoogleapiclientid/$escaped/g" /curriki-eks/envs/.env.local  > /curriki-eks/envs/.env.local.new
+            mv /curriki-eks/envs/.env.local.new /curriki-eks/envs/.env.local
+            escaped=$(echo ${ReactAppHubspot} | sed 's%/%\\/%g')
+            sed "s/reactapphubspot/$escaped/g" /curriki-eks/envs/.env.local  > /curriki-eks/envs/.env.local.new
+            mv /curriki-eks/envs/.env.local.new /curriki-eks/envs/.env.local
+            escaped=$(echo ${ReactAppH5PKey} | sed 's%/%\\/%g')
+            sed "s/reactapph5pkey/$escaped/g" /curriki-eks/envs/.env.local  > /curriki-eks/envs/.env.local.new
+            mv /curriki-eks/envs/.env.local.new /curriki-eks/envs/.env.local
             cp /curriki-eks/envs/.env.api.example /curriki-eks/envs/.env
-            sed -i 's/currikiappurl/${LaravelAppUrl}/g' /curriki-eks/envs/.env
-            sed -i 's/currikifrontendurl/${LaravelFrontEndUrl}/g' /curriki-eks/envs/.env
+            escaped=$(echo ${LaravelAppUrl} | sed 's%/%\\/%g')
+            sed "s/currikiappurl/$escaped/g" /curriki-eks/envs/.env  > /curriki-eks/envs/.env.new
+            mv /curriki-eks/envs/.env.new /curriki-eks/envs/.env
+            escaped=$(echo ${LaravelFrontEndUrl} | sed 's%/%\\/%g')
+            sed "s/currikifrontendurl/$escaped/g" /curriki-eks/envs/.env  > /curriki-eks/envs/.env.new
+            mv /curriki-eks/envs/.env.new /curriki-eks/envs/.env
             aws --region ${AWS::Region} secretsmanager get-secret-value --secret-id CurrikiStudioRDSCredentials --query SecretString --output text | jq -r .password > /curriki-eks/envs/password
             aws --region ${AWS::Region} secretsmanager get-secret-value --secret-id CurrikiStudioRDSCredentials --query SecretString --output text | jq -r .dbname > /curriki-eks/envs/dbname
             aws --region ${AWS::Region} secretsmanager get-secret-value --secret-id CurrikiStudioRDSCredentials --query SecretString --output text | jq -r .port > /curriki-eks/envs/port
