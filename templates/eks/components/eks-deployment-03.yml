@@ -63,11 +63,11 @@ Parameters:
   ReactAppApiUrl:
     Type: String
     Description: React App Api Url
-    Default: http://k8s.currikistudio.org/api/api
+    Default: https://k8s.currikistudio.org/api/api
   ReactAppResourceUrl:
     Type: String
     Description: React App Api Url
-    Default: http://k8s.currikistudio.org/api
+    Default: https://k8s.currikistudio.org/api
   ReactAppGoogleCaptcha:
     Type: String
     Description: React App Google Captcha

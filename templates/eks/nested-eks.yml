@@ -30,11 +30,11 @@ Parameters:
   ReactAppApiUrl:
     Type: String
     Description: React App Api Url
-    Default: http://k8s.currikistudio.org/api/api
+    Default: https://k8s.currikistudio.org/api/api
   ReactAppResourceUrl:
     Type: String
     Description: React App Api Url
-    Default: http://k8s.currikistudio.org/api
+    Default: https://k8s.currikistudio.org/api
   ReactAppGoogleCaptcha:
     Type: String
     Description: React App Google Captcha
@@ -297,7 +297,7 @@ Resources:
       TemplateURL: https://studio-eks.s3.amazonaws.com/templates/eks/components/eks-lambda-role-stack-05.yml
       TimeoutInMinutes: 60
   DataLoadFunctionStack:
-    DependsOn: DbStack
+    DependsOn: LambdaRoleStack
     Type: AWS::CloudFormation::Stack
     Properties:
       TemplateURL: https://studio-eks.s3.amazonaws.com/templates/eks/components/eks-data-load-function-stack-06.yml
@@ -312,7 +312,7 @@ Resources:
         S3Bucket: !Ref S3Bucket
         DataLoadFunctionLambdaS3Key: !Ref DataLoadFunctionLambdaS3Key
   DBDataLoad:
-    DependsOn: DbStack
+    DependsOn: DataLoadFunctionStack
     Type: AWS::CloudFormation::Stack
     Properties:
       TemplateURL: https://studio-eks.s3.amazonaws.com/templates/eks/components/eks-custom-resource-07.yml
