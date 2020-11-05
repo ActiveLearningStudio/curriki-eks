@@ -19,6 +19,34 @@ Parameters:
   LaravelAppUrl:
     Type: String
     Description: Laravel App Url
+    Default: https://k8s.currikistudio.org/api
+  LaravelFrontEndUrl:
+    Type: String
+    Description: Laravel Frontend App Url
+    Default: https://k8s.currikistudio.org
+  ReactAppPexelAPI:
+    Type: String
+    Description: Pexel API key
+  ReactAppApiUrl:
+    Type: String
+    Description: React App Api Url
+    Default: http://k8s.currikistudio.org/api/api
+  ReactAppResourceUrl:
+    Type: String
+    Description: React App Api Url
+    Default: http://k8s.currikistudio.org/api
+  ReactAppGoogleCaptcha:
+    Type: String
+    Description: React App Google Captcha
+  ReactAppGoogleApiClientId:
+    Type: String
+    Description: React App Google Captcha
+  ReactAppHubspot:
+    Type: String
+    Description: React App Hubspot
+  ReactAppH5PKey:
+    Type: String
+    Description: React App H5P Key
   VpcCidrBlock:
     Type: String
     Description: CIDR Block for VPC
@@ -149,6 +177,7 @@ Parameters:
   S3BucketURL:
     Type: String
     Description: S3 Bucket URL
+    Default: https://studio-eks.s3.amazonaws.com
   S3Bucket:
     Type: String
     Default: studio-eks
@@ -234,6 +263,15 @@ Resources:
         AcmCertArn: !Ref AcmCertArn
         VpcCidrBlock: !Ref VpcCidrBlock
         Ec2SecurityGroupId: !GetAtt EksCluster.Outputs.Ec2SecurityGroupId
+        LaravelAppUrl: !Ref LaravelAppUrl
+        LaravelFrontEndUrl: !Ref LaravelFrontEndUrl
+        ReactAppPexelAPI: !Ref ReactAppPexelAPI
+        ReactAppApiUrl: !Ref ReactAppApiUrl
+        ReactAppResourceUrl: !Ref ReactAppResourceUrl
+        ReactAppGoogleCaptcha: !Ref ReactAppGoogleCaptcha
+        ReactAppGoogleApiClientId: !Ref ReactAppGoogleApiClientId
+        ReactAppHubspot: !Ref ReactAppHubspot
+        ReactAppH5PKey: !Ref ReactAppH5PKey
       TemplateURL: https://studio-eks.s3.amazonaws.com/templates/eks/components/eks-deployment-03.yml
   dbStack:
     Type: AWS::CloudFormation::Stack

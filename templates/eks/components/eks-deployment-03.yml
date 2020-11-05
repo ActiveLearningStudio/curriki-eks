@@ -57,6 +57,29 @@ Parameters:
     Type: String
     Description: Laravel Frontend App Url
     Default: https://k8s.currikistudio.org
+  ReactAppPexelAPI:
+    Type: String
+    Description: Pexel API key
+  ReactAppApiUrl:
+    Type: String
+    Description: React App Api Url
+    Default: http://k8s.currikistudio.org/api/api
+  ReactAppResourceUrl:
+    Type: String
+    Description: React App Api Url
+    Default: http://k8s.currikistudio.org/api
+  ReactAppGoogleCaptcha:
+    Type: String
+    Description: React App Google Captcha
+  ReactAppGoogleApiClientId:
+    Type: String
+    Description: React App Google Captcha
+  ReactAppHubspot:
+    Type: String
+    Description: React App Hubspot
+  ReactAppH5PKey:
+    Type: String
+    Description: React App H5P Key
 Conditions:
   CreateTwoTargets:
     !Equals [ '2', !Ref NumberOfAZs ]
@@ -90,6 +113,7 @@ Resources:
             apt upgrade -y && apt update -y
             apt install awscli nfs-common unzip -y
             snap install kubectl --classic
+            snap install jq
             aws configure set aws_access_key_id ${AwsAccessKeyId} --profile default 
             aws configure set aws_secret_access_key ${AwsSecretAccessKey} --profile default
             aws eks update-kubeconfig --name ${ClusterName} --region ${AWS::Region}
@@ -102,7 +126,26 @@ Resources:
             sed -i 's/substitute-me-efs-region/${AWS::Region}/g' /curriki-eks/yamls/efs-provisioner.yml
             sed -i 's/substitute-me-efs-dns-name/${EksEfsFileSystem}.efs.${AWS::Region}.amazonaws.com/g' /curriki-eks/yamls/efs-provisioner.yml
             cp /curriki-eks/envs/.env.client.example /curriki-eks/envs/.env.local
+            sed -i 's/reactapppexelapi/${ReactAppPexelAPI}/g' /curriki-eks/envs/.env.local
+            sed -i 's/reactappapiurl/${ReactAppApiUrl}/g' /curriki-eks/envs/.env.local
+            sed -i 's/reactappresourceurl/${ReactAppResourceUrl}/g' /curriki-eks/envs/.env.local
+            sed -i 's/reactappgooglecaptcha/${ReactAppGoogleCaptcha}/g' /curriki-eks/envs/.env.local
+            sed -i 's/reactappgoogleapiclientid/${ReactAppGoogleApiClientId}/g' /curriki-eks/envs/.env.local
+            sed -i 's/reactapphubspot/${ReactAppHubspot}/g' /curriki-eks/envs/.env.local
+            sed -i 's/reactapph5pkey/${ReactAppH5PKey}/g' /curriki-eks/envs/.env.local
             cp /curriki-eks/envs/.env.api.example /curriki-eks/envs/.env
+            sed -i 's/currikiappurl/${LaravelAppUrl}/g' /curriki-eks/envs/.env
+            sed -i 's/currikifrontendurl/${LaravelFrontEndUrl}/g' /curriki-eks/envs/.env
+            aws --region ${AWS::Region} secretsmanager get-secret-value --secret-id CurrikiStudioRDSCredentials --query SecretString --output text | jq -r .password > /curriki-eks/envs/password
+            aws --region ${AWS::Region} secretsmanager get-secret-value --secret-id CurrikiStudioRDSCredentials --query SecretString --output text | jq -r .dbname > /curriki-eks/envs/dbname
+            aws --region ${AWS::Region} secretsmanager get-secret-value --secret-id CurrikiStudioRDSCredentials --query SecretString --output text | jq -r .port > /curriki-eks/envs/port
+            aws --region ${AWS::Region} secretsmanager get-secret-value --secret-id CurrikiStudioRDSCredentials --query SecretString --output text | jq -r .host > /curriki-eks/envs/host
+            aws --region ${AWS::Region} secretsmanager get-secret-value --secret-id CurrikiStudioRDSCredentials --query SecretString --output text | jq -r .username > /curriki-eks/envs/username
+            sed -i "s/currikidbhost/$(cat /curriki-eks/envs/host | sed 's%&%\\&%g')/g" /curriki-eks/envs/.env
+            sed -i "s/currikidbport/$(cat /curriki-eks/envs/port | sed 's%&%\\&%g')/g" /curriki-eks/envs/.env
+            sed -i "s/currikidbdatabase/$(cat /curriki-eks/envs/dbname | sed 's%&%\\&%g')/g" /curriki-eks/envs/.env
+            sed -i "s/currikidbusername/$(cat /curriki-eks/envs/username | sed 's%&%\\&%g')/g" /curriki-eks/envs/.env
+            sed -i "s/currikidbpass/$(cat /curriki-eks/envs/password | sed 's%&%\\&%g')/g" /curriki-eks/envs/.env
             sudo kubectl create secret generic currikidev-api-secret --from-file=/curriki-eks/envs/.env
             sudo kubectl create secret generic currikidev-client-secret --from-file=/curriki-eks/envs/.env.local
             sudo kubectl apply -k "github.com/kubernetes-sigs/aws-efs-csi-driver/deploy/kubernetes/overlays/stable/?ref=master"
