@@ -59,14 +59,7 @@ spec:
         lifecycle:
           postStart:
             exec:
-              command: 
-                - "/bin/sh"
-                - "-c"
-                - >
-                  php artisan key:generate;
-                  php artisan config:cache;
-                  composer install;
-                  chmod 777 -R /var/www/html/storage
+              command: ["/bin/sh", "-c", "php artisan key:generate && php artisan config:cache && composer install"]
         resources: {}
       restartPolicy: Always
       serviceAccountName: ""
