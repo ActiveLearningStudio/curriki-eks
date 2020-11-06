@@ -19,6 +19,9 @@ spec:
     spec:
       containers:
       - image: curriki/client:test2.0.0
+        readinessProbe:
+          initialDelaySeconds: 300
+          periodSeconds: 300
         imagePullPolicy: Always
         name: currikidev-client
         ports:
