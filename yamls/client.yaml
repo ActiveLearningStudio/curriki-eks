@@ -18,7 +18,7 @@ spec:
         io.kompose.service: currikidev-client
     spec:
       containers:
-      - image: curriki/client:test2.0.0
+      - image: curriki/client:develop1.0.0
         readinessProbe:
           initialDelaySeconds: 300
           periodSeconds: 300
