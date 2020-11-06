@@ -59,7 +59,12 @@ spec:
         lifecycle:
           postStart:
             exec:
-              command: ["/bin/sh", "-c", "php artisan key:generate && php artisan config:cache"]
+              command: 
+                - "/bin/sh"
+                - "-c"
+                - >
+                  php artisan key:generate;
+                  php artisan config:cache;
         resources: {}
       restartPolicy: Always
       serviceAccountName: ""
