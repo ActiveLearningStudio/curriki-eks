@@ -118,7 +118,7 @@ Resources:
             wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
             sudo apt-get update -y
             sudo apt-get -y install postgresql
-
+            
             aws configure set aws_access_key_id ${AwsAccessKeyId} --profile default 
             aws configure set aws_secret_access_key ${AwsSecretAccessKey} --profile default
             aws eks update-kubeconfig --name ${ClusterName} --region ${AWS::Region}
@@ -168,6 +168,8 @@ Resources:
             sed -i "s/currikidbdatabase/$(cat /curriki-eks/envs/dbname | sed 's%&%\\&%g')/g" /curriki-eks/envs/.env
             sed -i "s/currikidbusername/$(cat /curriki-eks/envs/username | sed 's%&%\\&%g')/g" /curriki-eks/envs/.env
             sed -i "s/currikidbpass/$(cat /curriki-eks/envs/password | sed 's%&%\\&%g')/g" /curriki-eks/envs/.env
+            export PGPASSWORD="$(cat /curriki-eks/envs/password | sed 's%&%\\&%g')"
+            psql -h $(cat /curriki-eks/envs/host | sed 's%&%\\&%g') -U $(cat /curriki-eks/envs/username | sed 's%&%\\&%g') -d $(cat /curriki-eks/envs/dbname | sed 's%&%\\&%g') < /curriki-eks/db/studio-initial-db.sql
             sudo kubectl create secret generic currikidev-api-secret --from-file=/curriki-eks/envs/.env
             sudo kubectl create secret generic currikidev-client-secret --from-file=/curriki-eks/envs/.env.local
             sudo kubectl apply -k "github.com/kubernetes-sigs/aws-efs-csi-driver/deploy/kubernetes/overlays/stable/?ref=master"
@@ -182,7 +184,7 @@ Resources:
             sudo /istio-1.7.3/bin/istioctl install --set profile=demo -f /curriki-eks/yamls/istio-install.yaml
             sudo kubectl label namespace default istio-injection=enabled
             sudo kubectl apply -f /curriki-eks/yamls/istio.yaml
-            cfn-signal -e $? --stack ${AWS::StackName} --resource EC2Instance --region ${AWS::Region}
+            cfn-signal -e $? --stack ${AWS::StackName} --resource EC2Instance --region ${AWS::Region}v
 
   EksEfsFileSystem:
     Type: AWS::EFS::FileSystem
