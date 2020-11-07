@@ -1,0 +1,17 @@
+[ 
+  { 
+    "label": "GeoGebra Type",
+    "name": "geogebra_title",
+    "type": "text", 
+    "default": "GeoGebra Classic Library",
+    "description": ""
+  },
+  {
+    "label": "GeoGebra Applet",
+    "name": "geogebra_applet",
+    "type": "text",
+    "widget": "GeoGebraClassicWidget",
+    "default": "",
+    "description": ""
+  }
+]
