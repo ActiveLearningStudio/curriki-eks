@@ -62,7 +62,7 @@ spec:
               command: 
                 - "/bin/sh"
                 - "-c"
-                - "php artisan key:generate"
+                - "php artisan key:generate && php artisan config:cache"
         resources: {}
       restartPolicy: Always
       serviceAccountName: ""
