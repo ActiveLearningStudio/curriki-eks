@@ -1,0 +1,25 @@
+.h5p-immersive {
+    padding: 2em;
+    color: black;
+}
+
+.h5p-immersive .immersive-title {
+    margin-bottom: 1em;
+}
+
+.h5p-immersive .immersive-controls {
+    margin-bottom: 1em;
+    text-align: center;
+}
+
+.h5p-immersive.h5p-fullscreen{
+  overflow: auto;
+}
+
+.h5p-immersive.h5p-fullscreen .insert-iframe{
+  width: -webkit-fill-available;
+  min-width: 60%;
+}
+iframe.insert-iframe {
+    min-height: 500px;
+}
