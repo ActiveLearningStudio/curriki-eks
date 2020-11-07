@@ -101,7 +101,7 @@ Resources:
     Type: AWS::EC2::Instance
     CreationPolicy: # <--- creation policy with timeout of 5 minutes
       ResourceSignal:
-        Timeout: PT15M
+        Timeout: PT30M
     Properties: 
       ImageId: !Ref AmiId
       InstanceType: t2.micro
