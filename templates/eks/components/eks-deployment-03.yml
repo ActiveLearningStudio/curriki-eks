@@ -187,6 +187,8 @@ Resources:
             sudo /istio-1.7.3/bin/istioctl install --set profile=demo -f /curriki-eks/yamls/istio-install.yaml
             sudo kubectl label namespace default istio-injection=enabled
             sudo kubectl apply -f /curriki-eks/yamls/istio.yaml
+            apt-get install heat-cfntools -y
+            cfn-init -v --stack ${AWS::StackName} --resource EC2Instance --region ${AWS::Region}
             cfn-signal -e $? --stack ${AWS::StackName} --resource EC2Instance --region ${AWS::Region}
 
   EksEfsFileSystem:
