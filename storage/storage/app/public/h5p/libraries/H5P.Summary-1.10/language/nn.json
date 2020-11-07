@@ -66,34 +66,34 @@
     },
     {
       "label": "Tekst som vises før antall påstandar som er løst i oppsummeringsoppgåva.",
-      "default": "Løst:",
+      "default": "Løyst:",
       "description": "Vil vises over påstandane. Eksempel: 'Løst: 2/5'"
     },
     {
       "label": "Tekst som visast før antall feil påstandar som er valde i oppsummeringsoppgåva.",
-      "default": "Antall feil:",
+      "default": "Tal feil:",
       "description": "Vil visast over påstandane. Eksempel: 'Antall feil: 4'"
     },
     {
       "label": "Overskrift over tilbakemelding",
-      "default": "Ditt resultat:",
+      "default": "Resultatet ditt:",
       "description": "Vil visast over tilbakemelding på oppsummeringsoppgåva."
     },
     {
       "label": "Merkelapp for riktig svar",
-      "default": "Rett"
+      "default": "Riktig"
     },
     {
       "label": "Readspeaker text for announcing incorrect answer",
-      "default": "Incorrect! Please try again."
+      "default": "Feil! Prøv igjen."
     },
     {
       "label": "Readspeaker label for incorrect answer",
-      "default": "Incorrect"
+      "default": "Feil"
     },
     {
       "label": "Label list of correct answers",
-      "default": "Rett svar"
+      "default": "Riktig svar"
     },
     {
       "label": "Label for the show tip button",
@@ -102,12 +102,12 @@
     {
       "label": "Textual representation of the score bar for those using a readspeaker",
       "description": ":num and :total are special keywords which are programmatically updated",
-      "default": "Du fikk :num av :total points"
+      "default": "Du fekk :num av :total poeng"
     },
     {
       "label": "Text used for readspeakers to communicate progress",
       "description": ":num and :total are special keywords which are programmatically updated",
-      "default": "Progress :num of :total"
+      "default": "Framgang :num av :total"
     }
   ]
 }

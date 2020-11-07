@@ -631,7 +631,20 @@ H5P.Summary = (function ($, Question, XApiEventBuilder, StopWatch) {
    * Used for contracts.
    */
   Summary.prototype.resetTask = function () {
-    // Summary is not yet able to Reset itself
+    this.offset = 0;
+    this.score = 0;
+    this.progress = 0;
+    this.answers = [];
+    this.answer = [];
+    this.errorCounts = [];
+    this.userResponses = [];
+    this.dataBitMap = [];
+
+    const contentWrapper = this.$myDom[0].parentNode;
+    contentWrapper.innerHTML = '';
+    this.createQuestion();
+    contentWrapper.appendChild(this.$myDom[0]);
+    this.removeFeedback();
   };
 
   /**
