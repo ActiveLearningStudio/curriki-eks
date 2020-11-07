@@ -99,6 +99,9 @@ Resources:
       - EksEfsFileSystem
       # - AcmCertArn
     Type: AWS::EC2::Instance
+    CreationPolicy: # <--- creation policy with timeout of 5 minutes
+      ResourceSignal:
+        Timeout: PT15M
     Properties: 
       ImageId: !Ref AmiId
       InstanceType: t2.micro
@@ -184,7 +187,7 @@ Resources:
             sudo /istio-1.7.3/bin/istioctl install --set profile=demo -f /curriki-eks/yamls/istio-install.yaml
             sudo kubectl label namespace default istio-injection=enabled
             sudo kubectl apply -f /curriki-eks/yamls/istio.yaml
-            cfn-signal -e $? --stack ${AWS::StackName} --resource EC2Instance --region ${AWS::Region}v
+            cfn-signal -e $? --stack ${AWS::StackName} --resource EC2Instance --region ${AWS::Region}
 
   EksEfsFileSystem:
     Type: AWS::EFS::FileSystem

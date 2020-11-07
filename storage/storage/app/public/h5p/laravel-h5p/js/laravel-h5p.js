@@ -2,6 +2,18 @@ var ns = H5PEditor;
 
 (function ($) {
   H5PEditor.init = function () {
+
+    //set auth token for subsequent ajax calls
+    const auth_token = localStorage.getItem("auth_token");
+    if(auth_token){
+      H5P.jQuery.ajaxSetup({
+          beforeSend: function (xhr)
+          {
+            xhr.setRequestHeader("Authorization", "Bearer " + auth_token);        
+          }
+      });
+    }
+    
     H5PEditor.$ = H5P.jQuery;
     H5PEditor.basePath = H5PIntegration.editor.libraryUrl;
     H5PEditor.fileIcon = H5PIntegration.editor.fileIcon;
@@ -41,7 +53,7 @@ var ns = H5PEditor;
       else {
         $upload.hide();
         if (h5peditor === undefined && $editor[0] != undefined && $params.val() != undefined) {
-          
+         
           window.h5peditorCopy = h5peditor = new ns.Editor(library, $params.val(), $editor[0]);
         }
         $create.show();
@@ -102,7 +114,7 @@ var ns = H5PEditor;
 
   H5PEditor.getAjaxUrl = function (action, parameters) {
 
-    var url = H5PIntegration.editor.ajaxPath + action + '/?';    
+    var url = H5PIntegration.editor.ajaxPath + action + '?';    
 
     if (parameters !== undefined) {
       for (var property in parameters) {

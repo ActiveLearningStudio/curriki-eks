@@ -88,7 +88,7 @@ H5P.init = function (target) {
      */
     H5P.canHasFullScreen = H5P.fullscreenSupported;
   }
-  setTimeout(() => {
+
   // H5Ps added in normal DIV.
   H5P.jQuery('.h5p-content:not(.h5p-initialized)', target).each(function () {
     var $element = H5P.jQuery(this).addClass('h5p-initialized');
@@ -97,12 +97,6 @@ H5P.init = function (target) {
     var contentData = H5PIntegration.contents['cid-' + contentId];
     if (contentData === undefined) {
       return H5P.error('No data for content id ' + contentId + '. Perhaps the library is gone?');
-    }
-    
-    if(contentData.metadata == undefined)
-    {
-      contentData.metadata = {};
-      contentData.metadata.title = '';
     }
     var library = {
       library: contentData.library,
@@ -141,7 +135,7 @@ H5P.init = function (target) {
 
     // Create new instance.
     var instance = H5P.newRunnable(library, contentId, $container, true, {standalone: true});
-    
+
     H5P.offlineRequestQueue = new H5P.OfflineRequestQueue({instance: instance});
 
     // Check if we should add and display a fullscreen button for this H5P.
@@ -381,7 +375,6 @@ H5P.init = function (target) {
     }
   });
 
-}, 1000);
   // Insert H5Ps that should be in iframes.
   H5P.jQuery('iframe.h5p-iframe:not(.h5p-initialized)', target).each(function () {
     var contentId = H5P.jQuery(this).addClass('h5p-initialized').data('content-id');
@@ -2710,159 +2703,155 @@ H5P.createTitle = function (rawTitle, maxLength) {
 
   // Init H5P when page is fully loadded
   $(document).ready(function () {
-setTimeout(() => {
-  
-  window.addEventListener('storage', function (event) {
-    // Pick up clipboard changes from other tabs
-    if (event.key === 'h5pClipboard') {
-      // Trigger an event so all 'Paste' buttons may be enabled.
-      H5P.externalDispatcher.trigger('datainclipboard', {reset: event.newValue === null});
-    }
-  });
 
-  var ccVersions = {
-    'default': '4.0',
-    '4.0': H5P.t('licenseCC40'),
-    '3.0': H5P.t('licenseCC30'),
-    '2.5': H5P.t('licenseCC25'),
-    '2.0': H5P.t('licenseCC20'),
-    '1.0': H5P.t('licenseCC10'),
-  };
-
-  /**
-   * Maps copyright license codes to their human readable counterpart.
-   *
-   * @type {Object}
-   */
-  H5P.copyrightLicenses = {
-    'U': H5P.t('licenseU'),
-    'CC BY': {
-      label: H5P.t('licenseCCBY'),
-      link: 'http://creativecommons.org/licenses/by/:version',
-      versions: ccVersions
-    },
-    'CC BY-SA': {
-      label: H5P.t('licenseCCBYSA'),
-      link: 'http://creativecommons.org/licenses/by-sa/:version',
-      versions: ccVersions
-    },
-    'CC BY-ND': {
-      label: H5P.t('licenseCCBYND'),
-      link: 'http://creativecommons.org/licenses/by-nd/:version',
-      versions: ccVersions
-    },
-    'CC BY-NC': {
-      label: H5P.t('licenseCCBYNC'),
-      link: 'http://creativecommons.org/licenses/by-nc/:version',
-      versions: ccVersions
-    },
-    'CC BY-NC-SA': {
-      label: H5P.t('licenseCCBYNCSA'),
-      link: 'http://creativecommons.org/licenses/by-nc-sa/:version',
-      versions: ccVersions
-    },
-    'CC BY-NC-ND': {
-      label: H5P.t('licenseCCBYNCND'),
-      link: 'http://creativecommons.org/licenses/by-nc-nd/:version',
-      versions: ccVersions
-    },
-    'CC0 1.0': {
-      label: H5P.t('licenseCC010'),
-      link: 'https://creativecommons.org/publicdomain/zero/1.0/'
-    },
-    'GNU GPL': {
-      label: H5P.t('licenseGPL'),
-      link: 'http://www.gnu.org/licenses/gpl-:version-standalone.html',
-      linkVersions: {
-        'v3': '3.0',
-        'v2': '2.0',
-        'v1': '1.0'
-      },
-      versions: {
-        'default': 'v3',
-        'v3': H5P.t('licenseV3'),
-        'v2': H5P.t('licenseV2'),
-        'v1': H5P.t('licenseV1')
+    window.addEventListener('storage', function (event) {
+      // Pick up clipboard changes from other tabs
+      if (event.key === 'h5pClipboard') {
+        // Trigger an event so all 'Paste' buttons may be enabled.
+        H5P.externalDispatcher.trigger('datainclipboard', {reset: event.newValue === null});
       }
-    },
-    'PD': {
-      label: H5P.t('licensePD'),
-      versions: {
-        'CC0 1.0': {
-          label: H5P.t('licenseCC010'),
-          link: 'https://creativecommons.org/publicdomain/zero/1.0/'
-        },
-        'CC PDM': {
-          label: H5P.t('licensePDM'),
-          link: 'https://creativecommons.org/publicdomain/mark/1.0/'
-        }
-      }
-    },
-    'ODC PDDL': '<a href="http://opendatacommons.org/licenses/pddl/1.0/" target="_blank">Public Domain Dedication and Licence</a>',
-    'CC PDM': {
-      label: H5P.t('licensePDM'),
-      link: 'https://creativecommons.org/publicdomain/mark/1.0/'
-    },
-    'C': H5P.t('licenseC'),
-  };
-
-  /**
-   * Indicates if H5P is embedded on an external page using iframe.
-   * @member {boolean} H5P.externalEmbed
-   */
-
-  // Relay events to top window. This must be done before H5P.init
-  // since events may be fired on initialization.
-  if (H5P.isFramed && H5P.externalEmbed === false) {
-    H5P.externalDispatcher.on('*', function (event) {
-      window.parent.H5P.externalDispatcher.trigger.call(this, event);
     });
-  }
 
-  /**
-   * Prevent H5P Core from initializing. Must be overriden before document ready.
-   * @member {boolean} H5P.preventInit
-   */
-  if (!H5P.preventInit) {
-    // Note that this start script has to be an external resource for it to
-    // load in correct order in IE9.
-    H5P.init(document.body);
-  }
+    var ccVersions = {
+      'default': '4.0',
+      '4.0': H5P.t('licenseCC40'),
+      '3.0': H5P.t('licenseCC30'),
+      '2.5': H5P.t('licenseCC25'),
+      '2.0': H5P.t('licenseCC20'),
+      '1.0': H5P.t('licenseCC10'),
+    };
 
-  if (H5PIntegration.saveFreq !== false) {
-    // When was the last state stored
-    var lastStoredOn = 0;
-    // Store the current state of the H5P when leaving the page.
-    var storeCurrentState = function () {
-      // Make sure at least 250 ms has passed since last save
-      var currentTime = new Date().getTime();
-      if (currentTime - lastStoredOn > 250) {
-        lastStoredOn = currentTime;
-        for (var i = 0; i < H5P.instances.length; i++) {
-          var instance = H5P.instances[i];
-          if (instance.getCurrentState instanceof Function ||
-              typeof instance.getCurrentState === 'function') {
-            var state = instance.getCurrentState();
-            if (state !== undefined) {
-              // Async is not used to prevent the request from being cancelled.
-              H5P.setUserData(instance.contentId, 'state', state, {deleteOnChange: true, async: false});
+    /**
+     * Maps copyright license codes to their human readable counterpart.
+     *
+     * @type {Object}
+     */
+    H5P.copyrightLicenses = {
+      'U': H5P.t('licenseU'),
+      'CC BY': {
+        label: H5P.t('licenseCCBY'),
+        link: 'http://creativecommons.org/licenses/by/:version',
+        versions: ccVersions
+      },
+      'CC BY-SA': {
+        label: H5P.t('licenseCCBYSA'),
+        link: 'http://creativecommons.org/licenses/by-sa/:version',
+        versions: ccVersions
+      },
+      'CC BY-ND': {
+        label: H5P.t('licenseCCBYND'),
+        link: 'http://creativecommons.org/licenses/by-nd/:version',
+        versions: ccVersions
+      },
+      'CC BY-NC': {
+        label: H5P.t('licenseCCBYNC'),
+        link: 'http://creativecommons.org/licenses/by-nc/:version',
+        versions: ccVersions
+      },
+      'CC BY-NC-SA': {
+        label: H5P.t('licenseCCBYNCSA'),
+        link: 'http://creativecommons.org/licenses/by-nc-sa/:version',
+        versions: ccVersions
+      },
+      'CC BY-NC-ND': {
+        label: H5P.t('licenseCCBYNCND'),
+        link: 'http://creativecommons.org/licenses/by-nc-nd/:version',
+        versions: ccVersions
+      },
+      'CC0 1.0': {
+        label: H5P.t('licenseCC010'),
+        link: 'https://creativecommons.org/publicdomain/zero/1.0/'
+      },
+      'GNU GPL': {
+        label: H5P.t('licenseGPL'),
+        link: 'http://www.gnu.org/licenses/gpl-:version-standalone.html',
+        linkVersions: {
+          'v3': '3.0',
+          'v2': '2.0',
+          'v1': '1.0'
+        },
+        versions: {
+          'default': 'v3',
+          'v3': H5P.t('licenseV3'),
+          'v2': H5P.t('licenseV2'),
+          'v1': H5P.t('licenseV1')
+        }
+      },
+      'PD': {
+        label: H5P.t('licensePD'),
+        versions: {
+          'CC0 1.0': {
+            label: H5P.t('licenseCC010'),
+            link: 'https://creativecommons.org/publicdomain/zero/1.0/'
+          },
+          'CC PDM': {
+            label: H5P.t('licensePDM'),
+            link: 'https://creativecommons.org/publicdomain/mark/1.0/'
+          }
+        }
+      },
+      'ODC PDDL': '<a href="http://opendatacommons.org/licenses/pddl/1.0/" target="_blank">Public Domain Dedication and Licence</a>',
+      'CC PDM': {
+        label: H5P.t('licensePDM'),
+        link: 'https://creativecommons.org/publicdomain/mark/1.0/'
+      },
+      'C': H5P.t('licenseC'),
+    };
+
+    /**
+     * Indicates if H5P is embedded on an external page using iframe.
+     * @member {boolean} H5P.externalEmbed
+     */
+
+    // Relay events to top window. This must be done before H5P.init
+    // since events may be fired on initialization.
+    if (H5P.isFramed && H5P.externalEmbed === false) {
+      H5P.externalDispatcher.on('*', function (event) {
+        window.parent.H5P.externalDispatcher.trigger.call(this, event);
+      });
+    }
+
+    /**
+     * Prevent H5P Core from initializing. Must be overriden before document ready.
+     * @member {boolean} H5P.preventInit
+     */
+    if (!H5P.preventInit) {
+      // Note that this start script has to be an external resource for it to
+      // load in correct order in IE9.
+      H5P.init(document.body);
+    }
+
+    if (H5PIntegration.saveFreq !== false) {
+      // When was the last state stored
+      var lastStoredOn = 0;
+      // Store the current state of the H5P when leaving the page.
+      var storeCurrentState = function () {
+        // Make sure at least 250 ms has passed since last save
+        var currentTime = new Date().getTime();
+        if (currentTime - lastStoredOn > 250) {
+          lastStoredOn = currentTime;
+          for (var i = 0; i < H5P.instances.length; i++) {
+            var instance = H5P.instances[i];
+            if (instance.getCurrentState instanceof Function ||
+                typeof instance.getCurrentState === 'function') {
+              var state = instance.getCurrentState();
+              if (state !== undefined) {
+                // Async is not used to prevent the request from being cancelled.
+                H5P.setUserData(instance.contentId, 'state', state, {deleteOnChange: true, async: false});
+              }
             }
           }
         }
-      }
-    };
-    // iPad does not support beforeunload, therefore using unload
-    H5P.$window.one('beforeunload unload', function () {
-      // Only want to do this once
-      H5P.$window.off('pagehide beforeunload unload');
-      storeCurrentState();
-    });
-    // pagehide is used on iPad when tabs are switched
-    H5P.$window.on('pagehide', storeCurrentState);
-  }
-},
-1000);
-    
+      };
+      // iPad does not support beforeunload, therefore using unload
+      H5P.$window.one('beforeunload unload', function () {
+        // Only want to do this once
+        H5P.$window.off('pagehide beforeunload unload');
+        storeCurrentState();
+      });
+      // pagehide is used on iPad when tabs are switched
+      H5P.$window.on('pagehide', storeCurrentState);
+    }
   });
 
 })(H5P.jQuery);
