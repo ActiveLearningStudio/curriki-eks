@@ -99,11 +99,23 @@ Resources:
       - EksEfsFileSystem
       # - AcmCertArn
     Type: AWS::EC2::Instance
+    Metadata:
+      'AWS::CloudFormation::Init':
+        configSets:
+          Install:
+          - Install
+        Install:
+          files:
+            /tmp/test.txt:
+              content: Done!
+              mode: '000755'
+              owner: root
+              group: root
     CreationPolicy: # <--- creation policy with timeout of 5 minutes
       ResourceSignal:
         Timeout: PT30M
     Properties: 
-      ImageId: !Ref AmiId
+      ImageId: ami-0947d2ba12ee1ff75
       InstanceType: t2.micro
       KeyName: !Ref SSHKeyPair
       SecurityGroupIds: 
@@ -113,15 +125,14 @@ Resources:
         Fn::Base64: 
           !Sub |
             #!/bin/bash
-            apt upgrade -y && apt update -y
-            apt install awscli nfs-common unzip -y
-            snap install kubectl --classic
-            snap install jq
-            sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
-            wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
-            sudo apt-get update -y
-            sudo apt-get -y install postgresql
-            
+            yum update -y
+            yum install -y amazon-efs-utils
+            curl -o kubectl https://amazon-eks.s3.us-west-2.amazonaws.com/1.18.8/2020-09-18/bin/linux/amd64/kubectl
+            chmod +x ./kubectl
+            sudo mv ./kubectl /bin/
+            yum install jq -y
+            yum install git -y
+            amazon-linux-extras install postgresql11 -y
             aws configure set aws_access_key_id ${AwsAccessKeyId} --profile default 
             aws configure set aws_secret_access_key ${AwsSecretAccessKey} --profile default
             aws eks update-kubeconfig --name ${ClusterName} --region ${AWS::Region}
@@ -187,9 +198,8 @@ Resources:
             sudo /istio-1.7.3/bin/istioctl install --set profile=demo -f /curriki-eks/yamls/istio-install.yaml
             sudo kubectl label namespace default istio-injection=enabled
             sudo kubectl apply -f /curriki-eks/yamls/istio.yaml
-            apt-get install heat-cfntools -y
-            cfn-init -v --stack ${AWS::StackName} --resource EC2Instance --region ${AWS::Region}
-            cfn-signal -e $? --stack ${AWS::StackName} --resource EC2Instance --region ${AWS::Region}
+            /opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource Ec2Instance --configsets Install --region ${AWS::Region}
+            /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource Ec2Instance --region ${AWS::Region}
 
   EksEfsFileSystem:
     Type: AWS::EFS::FileSystem
