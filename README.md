@@ -1,6 +1,6 @@
 # Deploy CurrikiStudio to the AWS Cloud
 
-CurrikiStudio can be deployed to an AWS account using our CloudFormation template.  The template can be downloaded from the following link, or entered directly when creating the stack (see Step 2 below).
+CurrikiStudio can be deployed to an AWS account using our CloudFormation template.  The template can be downloaded from the following link, or entered directly as an S3 URL when creating the stack (see Step 2 below).
 
 https://studio-eks.s3.amazonaws.com/templates/eks/curriki-eks-master-new-vpc.yml
 
