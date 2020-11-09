@@ -17,6 +17,7 @@ CloudFormation > Stacks > Create stack
 Specify the CurrikiStudio template by entering the following Amazon S3 URL and then press the "Next" button:
 https://studio-eks.s3.amazonaws.com/templates/eks/curriki-eks-master-new-vpc.yml
 
+
 <img src="https://www.curriki.org/wp-content/uploads/2020/11/step.two_.aws_.png" />
 
 <h3>STEP 3</h3>
