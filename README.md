@@ -19,7 +19,8 @@ https://studio-eks.s3.amazonaws.com/templates/eks/curriki-eks-master-new-vpc.yml
 
 <img src="https://www.curriki.org/wp-content/uploads/2020/11/step.two_.aws_.png" />
 
-<h3>Complete and submit the CloudFormation form</h3>
+<h3>STEP 3</h3>
+Complete and submit the CloudFormation form
 
 <img src="https://www.curriki.org/wp-content/uploads/2020/11/screencapture-us-west-2-console-aws-amazon-cloudformation-home-2020-11-09-15_48_58.png" />
 
