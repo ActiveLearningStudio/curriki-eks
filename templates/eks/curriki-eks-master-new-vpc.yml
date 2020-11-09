@@ -89,6 +89,7 @@ Parameters:
   EksVersion:
     Type: String
     Description: EKS Version
+    Default: "1.18"
     AllowedValues:
     - "1.17"
     - "1.18"
@@ -174,18 +175,6 @@ Parameters:
     Type: String
     Description: AWS Secret Access Key
     NoEcho: "true"
-  S3BucketURL:
-    Type: String
-    Description: S3 Bucket URL
-    Default: https://studio-eks.s3.amazonaws.com
-  S3Bucket:
-    Type: String
-    Default: studio-eks
-    Description: Local Bucket where stack exists
-  DataLoadFunctionLambdaS3Key:
-    Type: String
-    Default: lambda/DataLoadFunction.zip
-    Description: DataLoadFunction.zip File in bucket
   DatabaseInstanceType:
     Type: String
     Default: db.t3.xlarge
@@ -228,7 +217,7 @@ Resources:
             - ','
             - !Ref AvailabilityZones
         NumberOfAZs: !Ref NumberOfAZs
-      TemplateURL: https://studio-eks.s3.amazonaws.com/templates/eks/components/eks-cluster-01.yml
+      TemplateURL: https://studio-eks.s3.amazonaws.com/templates/eks/components/curriki-eks-01-cluster.yml
   EksNodeGroup:
     DependsOn: EksCluster
     Type: AWS::CloudFormation::Stack
@@ -242,7 +231,16 @@ Resources:
         MaxWorkerNodes: !Ref MaxWorkerNodes
         DesiredWorkerNodes: !Ref DesiredWorkerNodes
         PublicSubnets: !GetAtt EksCluster.Outputs.SubnetsPublic
-      TemplateURL: https://studio-eks.s3.amazonaws.com/templates/eks/components/eks-nodegroup-02.yml
+      TemplateURL: https://studio-eks.s3.amazonaws.com/templates/eks/components/curriki-eks-02-nodegroup.yml
+  DbStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: https://studio-eks.s3.amazonaws.com/templates/eks/components/curriki-eks-03-database-deploy.yml
+      TimeoutInMinutes: 60
+      Parameters:
+        MyVPC: !GetAtt EksCluster.Outputs.VPC
+        PrivateSubnets: !GetAtt EksCluster.Outputs.SubnetsPrivate
+        DatabaseInstanceType: !Ref DatabaseInstanceType
   EksDeployment:
     DependsOn: 
       - EksNodeGroup
@@ -261,7 +259,6 @@ Resources:
             - ','
             - !Ref AvailabilityZones
         NumberOfAZs: !Ref NumberOfAZs
-        S3BucketURL: !Ref S3BucketURL
         AcmCertArn: !Ref AcmCertArn
         VpcCidrBlock: !Ref VpcCidrBlock
         Ec2SecurityGroupId: !GetAtt EksCluster.Outputs.Ec2SecurityGroupId
@@ -274,55 +271,5 @@ Resources:
         ReactAppGoogleApiClientId: !Ref ReactAppGoogleApiClientId
         ReactAppHubspot: !Ref ReactAppHubspot
         ReactAppH5PKey: !Ref ReactAppH5PKey
-      TemplateURL: https://studio-eks.s3.amazonaws.com/templates/eks/components/eks-deployment-03.yml
-  DbStack:
-    Type: AWS::CloudFormation::Stack
-    Properties:
-      TemplateURL: https://studio-eks.s3.amazonaws.com/templates/eks/components/eks-database-deploy-04.yml
-      TimeoutInMinutes: 60
-      Parameters:
-        MyVPC: !GetAtt EksCluster.Outputs.VPC
-        PrivateSubnets: !GetAtt EksCluster.Outputs.SubnetsPrivate
-        DatabaseInstanceType: !Ref DatabaseInstanceType
-        # DBSubnet1:
-        #   Ref: Subnet1
-        # DBSubnet2:
-        #   Ref: Subnet2
-        # DBSubnet3:
-        #   Ref: Subnet3
-  # LambdaRoleStack:
-  #   DependsOn: DbStack
-  #   Type: AWS::CloudFormation::Stack
-  #   Properties:
-  #     TemplateURL: https://studio-eks.s3.amazonaws.com/templates/eks/components/eks-lambda-role-stack-05.yml
-  #     TimeoutInMinutes: 60
-  # DataLoadFunctionStack:
-  #   DependsOn: LambdaRoleStack
-  #   Type: AWS::CloudFormation::Stack
-  #   Properties:
-  #     TemplateURL: https://studio-eks.s3.amazonaws.com/templates/eks/components/eks-data-load-function-stack-06.yml
-  #     TimeoutInMinutes: 60
-  #     Parameters:
-  #       RoleARN:
-  #         Fn::GetAtt:
-  #         - LambdaRoleStack
-  #         - Outputs.LambdaRole
-  #       MyVPC: !GetAtt EksCluster.Outputs.VPC
-  #       PrivateSubnets: !GetAtt EksCluster.Outputs.SubnetsPrivate
-  #       S3Bucket: !Ref S3Bucket
-  #       DataLoadFunctionLambdaS3Key: !Ref DataLoadFunctionLambdaS3Key
-  # DBDataLoad:
-  #   DependsOn: DataLoadFunctionStack
-  #   Type: AWS::CloudFormation::Stack
-  #   Properties:
-  #     TemplateURL: https://studio-eks.s3.amazonaws.com/templates/eks/components/eks-custom-resource-07.yml
-  #     TimeoutInMinutes: 5
-  #     Parameters:
-  #       DatabaseURL:
-  #         Fn::GetAtt:
-  #         - DbStack
-  #         - Outputs.EndpointURL
-  #       FunctionARN:
-  #         Fn::GetAtt:
-  #         - DataLoadFunctionStack
-  #         - Outputs.FunctionARN
+      TemplateURL: https://studio-eks.s3.amazonaws.com/templates/eks/components/curriki-eks-04-deployment.yml
+        

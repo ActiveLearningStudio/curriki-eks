@@ -29,10 +29,6 @@ Parameters:
   ClusterName: 
     Type: String
     Description: Name of your managed EKS Cluster
-  AmiId:
-    Type: AWS::SSM::Parameter::Value<String>
-    Description: ParameterStore name of the Parameter containing Ubuntu AMI
-    Default: /aws/service/canonical/ubuntu/server/20.04/stable/current/amd64/hvm/ebs-gp2/ami-id
   AwsAccessKeyId:
     Type: String
     Description: AWS Access Key ID
@@ -43,9 +39,6 @@ Parameters:
     NoEcho: "true"
   Ec2SecurityGroupId: 
     Type: String
-  S3BucketURL:
-    Type: String
-    Description: S3 Bucket URL
   AcmCertArn:
     Type: String
     Description: Arn
