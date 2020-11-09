@@ -5,8 +5,9 @@ CurrikiStudio can be deployed to an AWS account using our CloudFormation templat
 
 https://studio-eks.s3.amazonaws.com/templates/eks/curriki-eks-master-new-vpc.yml
 
-## Quick Guid
+## Quick Guide
 
+<h3>STEP 1</h3>
 From the AWS Console, create a new stack:
 
  CloudFormation > Stacks > Create stack
