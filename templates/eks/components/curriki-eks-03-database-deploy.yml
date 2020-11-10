@@ -32,6 +32,7 @@ Resources:
     Type: AWS::RDS::DBInstance
     Properties:
       DBName: curriki
+      MultiAZ: true
       AllocatedStorage: '5'
       VPCSecurityGroups:
       - Ref: DBSecurityGroup
