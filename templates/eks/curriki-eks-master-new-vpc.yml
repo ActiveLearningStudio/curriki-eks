@@ -84,6 +84,7 @@ Parameters:
   EbsDiskSize:
     Type: Number
     Description: Size of EBS Volume to be attached with worker nodes
+    Default: 8
   InstanceType:
     Type: String
     Description: Instance type for worker nodes
@@ -150,12 +151,15 @@ Parameters:
   MinWorkerNodes:
     Type: Number
     Description: Minimum no. of Worker nodes in EKS Cluster
+    Default: 3
   MaxWorkerNodes:
     Type: Number
     Description: Maximum no. of Worker nodes in EKS Cluster
+    Default: 5
   DesiredWorkerNodes:
     Type: Number
     Description: Desired no. of Worker nodes in EKS Cluster
+    Default: 3
   AwsAccessKeyId:
     Type: String
     Description: AWS Access Key ID
