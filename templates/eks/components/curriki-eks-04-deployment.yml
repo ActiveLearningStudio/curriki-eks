@@ -42,10 +42,6 @@ Parameters:
   AcmCertArn:
     Type: String
     Description: Arn
-  LaravelAppUrl:
-    Type: String
-    Description: Laravel App Url
-    Default: https://k8s.currikistudio.org/api
   LaravelFrontEndUrl:
     Type: String
     Description: Laravel Frontend App Url
@@ -53,10 +49,6 @@ Parameters:
   ReactAppPexelAPI:
     Type: String
     Description: Pexel API key
-  ReactAppApiUrl:
-    Type: String
-    Description: React App Api Url
-    Default: https://k8s.currikistudio.org/api/api
   ReactAppResourceUrl:
     Type: String
     Description: React App Api Url
@@ -73,6 +65,10 @@ Parameters:
   ReactAppH5PKey:
     Type: String
     Description: React App H5P Key
+  AmiId:
+    Type: AWS::SSM::Parameter::Value<String>
+    Description: ParameterStore name of the Parameter containing Ubuntu AMI
+    Default: /aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2
 Conditions:
   CreateTwoTargets:
     !Equals [ '2', !Ref NumberOfAZs ]
@@ -108,7 +104,7 @@ Resources:
       ResourceSignal:
         Timeout: PT30M
     Properties: 
-      ImageId: ami-0947d2ba12ee1ff75
+      ImageId: !Ref AmiId
       InstanceType: t2.micro
       KeyName: !Ref SSHKeyPair
       SecurityGroupIds: 
@@ -140,10 +136,10 @@ Resources:
             escaped=$(echo ${ReactAppPexelAPI} | sed 's%/%\\/%g')
             sed "s/reactapppexelapi/$escaped/g" /curriki-eks/envs/.env.local  > /curriki-eks/envs/.env.local.new
             mv /curriki-eks/envs/.env.local.new /curriki-eks/envs/.env.local
-            escaped=$(echo ${ReactAppApiUrl} | sed 's%/%\\/%g')
+            escaped=$(echo ${LaravelFrontEndUrl}/api/api | sed 's%/%\\/%g')
             sed "s/reactappapiurl/$escaped/g" /curriki-eks/envs/.env.local  > /curriki-eks/envs/.env.local.new
             mv /curriki-eks/envs/.env.local.new /curriki-eks/envs/.env.local
-            escaped=$(echo ${ReactAppResourceUrl} | sed 's%/%\\/%g')
+            escaped=$(echo ${LaravelFrontEndUrl}/api | sed 's%/%\\/%g')
             sed "s/reactappresourceurl/$escaped/g" /curriki-eks/envs/.env.local  > /curriki-eks/envs/.env.local.new
             mv /curriki-eks/envs/.env.local.new /curriki-eks/envs/.env.local
             escaped=$(echo ${ReactAppGoogleCaptcha} | sed 's%/%\\/%g')
@@ -159,7 +155,7 @@ Resources:
             sed "s/reactapph5pkey/$escaped/g" /curriki-eks/envs/.env.local  > /curriki-eks/envs/.env.local.new
             mv /curriki-eks/envs/.env.local.new /curriki-eks/envs/.env.local
             cp /curriki-eks/envs/.env.api.example /curriki-eks/envs/.env
-            escaped=$(echo ${LaravelAppUrl} | sed 's%/%\\/%g')
+            escaped=$(echo ${LaravelFrontEndUrl}/api | sed 's%/%\\/%g')
             sed "s/currikiappurl/$escaped/g" /curriki-eks/envs/.env  > /curriki-eks/envs/.env.new
             mv /curriki-eks/envs/.env.new /curriki-eks/envs/.env
             escaped=$(echo ${LaravelFrontEndUrl} | sed 's%/%\\/%g')

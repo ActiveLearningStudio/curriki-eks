@@ -16,25 +16,13 @@ Parameters:
     Description: Number of Availability Zones to use in the VPC. This must match your
       selections in the list of Availability Zones parameter.
     Type: Number
-  LaravelAppUrl:
-    Type: String
-    Description: Laravel App Url
-    Default: https://k8s.currikistudio.org/api
   LaravelFrontEndUrl:
     Type: String
-    Description: Laravel Frontend App Url
+    Description: Frontend App Url
     Default: https://k8s.currikistudio.org
   ReactAppPexelAPI:
     Type: String
     Description: Pexel API key
-  ReactAppApiUrl:
-    Type: String
-    Description: React App Api Url
-    Default: https://k8s.currikistudio.org/api/api
-  ReactAppResourceUrl:
-    Type: String
-    Description: React App Api Url
-    Default: https://k8s.currikistudio.org/api
   ReactAppGoogleCaptcha:
     Type: String
     Description: React App Google Captcha
@@ -100,6 +88,7 @@ Parameters:
     Type: String
     Description: Instance type for worker nodes
     ConstraintDescription: Must be a valid EC2 Instance Type
+    Default: t2.large
     AllowedValues:
       - t1.micro
       - t2.nano
@@ -180,6 +169,7 @@ Parameters:
     Default: db.t3.xlarge
     Description: The Amazon RDS database instance class.
     ConstraintDescription: Must be a valid RDS instance class.
+    Default: db.r4.large
     AllowedValues:
       - db.t2.small
       - db.r3.xlarge
@@ -262,11 +252,8 @@ Resources:
         AcmCertArn: !Ref AcmCertArn
         VpcCidrBlock: !Ref VpcCidrBlock
         Ec2SecurityGroupId: !GetAtt EksCluster.Outputs.Ec2SecurityGroupId
-        LaravelAppUrl: !Ref LaravelAppUrl
         LaravelFrontEndUrl: !Ref LaravelFrontEndUrl
         ReactAppPexelAPI: !Ref ReactAppPexelAPI
-        ReactAppApiUrl: !Ref ReactAppApiUrl
-        ReactAppResourceUrl: !Ref ReactAppResourceUrl
         ReactAppGoogleCaptcha: !Ref ReactAppGoogleCaptcha
         ReactAppGoogleApiClientId: !Ref ReactAppGoogleApiClientId
         ReactAppHubspot: !Ref ReactAppHubspot
