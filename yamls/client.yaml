@@ -18,7 +18,7 @@ spec:
         io.kompose.service: currikidev-client
     spec:
       containers:
-      - image: curriki/client:develop1.0.0
+      - image: curriki/client:1.0.0
         imagePullPolicy: Always
         name: currikidev-client
         ports:

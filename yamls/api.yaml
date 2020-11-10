@@ -41,7 +41,7 @@ spec:
         io.kompose.service: currikidev-api
     spec:
       containers:
-      - image: curriki/api:develop1.0.0
+      - image: curriki/api:1.0.0
         imagePullPolicy: Always
         name: currikidev-api
         envFrom:
