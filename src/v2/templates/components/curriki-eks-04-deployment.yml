@@ -135,9 +135,9 @@ Resources:
             sudo mount -t nfs4 -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport ${EksEfsFileSystem}.efs.${AWS::Region}.amazonaws.com:/ ~/efs-mount
             git clone -b develop https://github.com/ActiveLearningStudio/curriki-eks.git
             unzip /curriki-eks/storage/storage.zip -d ~/efs-mount
-            sed -i 's/substitute-me-efs-id/${EksEfsFileSystem}/g' /curriki-eks/yamls/efs-provisioner.yml
-            sed -i 's/substitute-me-efs-region/${AWS::Region}/g' /curriki-eks/yamls/efs-provisioner.yml
-            sed -i 's/substitute-me-efs-dns-name/${EksEfsFileSystem}.efs.${AWS::Region}.amazonaws.com/g' /curriki-eks/yamls/efs-provisioner.yml
+            sed -i 's/substitute-me-efs-id/${EksEfsFileSystem}/g' /curriki-eks/src/v2/yamls/efs-provisioner.yml
+            sed -i 's/substitute-me-efs-region/${AWS::Region}/g' /curriki-eks/src/v2/yamls/efs-provisioner.yml
+            sed -i 's/substitute-me-efs-dns-name/${EksEfsFileSystem}.efs.${AWS::Region}.amazonaws.com/g' /curriki-eks/src/v2/yamls/efs-provisioner.yml
             cp /curriki-eks/envs/.env.client.example /curriki-eks/envs/.env.local
             escaped=$(echo ${ReactAppPexelAPI} | sed 's%/%\\/%g')
             sed "s/reactapppexelapi/$escaped/g" /curriki-eks/envs/.env.local  > /curriki-eks/envs/.env.local.new
@@ -182,17 +182,17 @@ Resources:
             sudo kubectl create secret generic currikidev-api-secret --from-file=/curriki-eks/envs/.env
             sudo kubectl create secret generic currikidev-client-secret --from-file=/curriki-eks/envs/.env.local
             sudo kubectl apply -k "github.com/kubernetes-sigs/aws-efs-csi-driver/deploy/kubernetes/overlays/stable/?ref=master"
-            sudo kubectl apply -f /curriki-eks/yamls/rbac.yml
-            sudo kubectl apply -f /curriki-eks/yamls/efs-provisioner.yml
-            sudo kubectl apply -f /curriki-eks/yamls/api.yaml
-            sudo kubectl apply -f /curriki-eks/yamls/client.yaml
+            sudo kubectl apply -f /curriki-eks/src/v2/yamls/rbac.yml
+            sudo kubectl apply -f /curriki-eks/src/v2/yamls/efs-provisioner.yml
+            sudo kubectl apply -f /curriki-eks/src/v2/yamls/api.yaml
+            sudo kubectl apply -f /curriki-eks/src/v2/yamls/client.yaml
             curl -L https://istio.io/downloadIstio | ISTIO_VERSION=1.7.3 TARGET_ARCH=x86_64 sh -
             escaped=$(echo ${AcmCertArn} | sed 's%/%\\/%g')
-            sed "s/substitute-me-acm-cert-substitute-me/$escaped/g" /curriki-eks/yamls/istio-install.yaml  > /curriki-eks/yamls/istio-install.yaml.new
-            mv /curriki-eks/yamls/istio-install.yaml.new /curriki-eks/yamls/istio-install.yaml
-            sudo /istio-1.7.3/bin/istioctl install --set profile=demo -f /curriki-eks/yamls/istio-install.yaml
+            sed "s/substitute-me-acm-cert-substitute-me/$escaped/g" /curriki-eks/src/v2/yamls/istio-install.yaml  > /curriki-eks/src/v2/yamls/istio-install.yaml.new
+            mv /curriki-eks/src/v2/yamls/istio-install.yaml.new /curriki-eks/src/v2/yamls/istio-install.yaml
+            sudo /istio-1.7.3/bin/istioctl install --set profile=demo -f /curriki-eks/src/v2/yamls/istio-install.yaml
             sudo kubectl label namespace default istio-injection=enabled
-            sudo kubectl apply -f /curriki-eks/yamls/istio.yaml
+            sudo kubectl apply -f /curriki-eks/src/v2/yamls/istio.yaml
             /opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource Ec2Instance --configsets Install --region ${AWS::Region}
             /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource Ec2Instance --region ${AWS::Region}
 
