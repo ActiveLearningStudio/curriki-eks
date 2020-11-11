@@ -1,0 +1,264 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'EKS Cluster and Managed Nodes'
+Parameters:
+  AvailabilityZones:
+    Description: 'List of Availability Zones to use for the subnets in the VPC. Note:
+      The logical order is preserved.'
+    Type: List<AWS::EC2::AvailabilityZone::Name>
+  NumberOfAZs:
+    AllowedValues:
+    - 2
+    - 3
+    - 4
+    - 5
+    - 6
+    Default: 3
+    Description: Number of Availability Zones to use in the VPC. This must match your
+      selections in the list of Availability Zones parameter.
+    Type: Number
+  LaravelFrontEndUrl:
+    Type: String
+    Description: Frontend App Url
+    Default: https://k8s.currikistudio.org
+  ReactAppPexelAPI:
+    Type: String
+    Description: Pexel API key
+  ReactAppGoogleCaptcha:
+    Type: String
+    Description: React App Google Captcha
+  ReactAppGoogleApiClientId:
+    Type: String
+    Description: React App Google Captcha
+  ReactAppHubspot:
+    Type: String
+    Description: React App Hubspot
+  ReactAppH5PKey:
+    Type: String
+    Description: React App H5P Key
+  VpcCidrBlock:
+    Type: String
+    Description: CIDR Block for VPC
+    Default: 10.0.0.0/16
+  PublicSubnetCidrBlockA:
+    Type: String
+    Description: CIDR Block for Public Subnet
+    Default: 10.0.200.0/24
+  PublicSubnetCidrBlockB:
+    Type: String
+    Description: CIDR Block for Public Subnet
+    Default: 10.0.201.0/24
+  PublicSubnetCidrBlockC:
+    Type: String
+    Description: CIDR Block for Public Subnet
+    Default: 10.0.202.0/24
+  PublicSubnetCidrBlockD:
+    Type: String
+    Description: CIDR Block for Public Subnet
+    Default: 10.0.203.0/24
+  PrivateSubnetCidrBlockA:
+    Type: String
+    Description: CIDR Block for Private Subnet
+    Default: 10.0.0.0/22
+  PrivateSubnetCidrBlockB:
+    Type: String
+    Description: CIDR Block for Private Subnet
+    Default: 10.0.4.0/22
+  PrivateSubnetCidrBlockC:
+    Type: String
+    Description: CIDR Block for Private Subnet
+    Default: 10.0.8.0/22
+  PrivateSubnetCidrBlockD:
+    Type: String
+    Description: CIDR Block for Private Subnet
+    Default: 10.0.12.0/22
+  ClusterName: 
+    Type: String
+    Description: Name of your managed EKS Cluster
+  EksVersion:
+    Type: String
+    Description: EKS Version
+    Default: "1.18"
+    AllowedValues:
+    - "1.17"
+    - "1.18"
+  EbsDiskSize:
+    Type: Number
+    Description: Size of EBS Volume to be attached with worker nodes
+    Default: 8
+  InstanceType:
+    Type: String
+    Description: Instance type for worker nodes
+    ConstraintDescription: Must be a valid EC2 Instance Type
+    Default: t2.large
+    AllowedValues:
+      - t1.micro
+      - t2.nano
+      - t2.micro
+      - t2.small
+      - t2.medium
+      - t2.large
+      - m1.small
+      - m1.medium
+      - m1.large
+      - m1.xlarge
+      - m2.xlarge
+      - m2.2xlarge
+      - m2.4xlarge
+      - m3.medium
+      - m3.large
+      - m3.xlarge
+      - m3.2xlarge
+      - m4.large
+      - m4.xlarge
+      - m4.2xlarge
+      - m4.4xlarge
+      - m4.10xlarge
+      - c1.medium
+      - c1.xlarge
+      - c3.large
+      - c3.xlarge
+      - c3.2xlarge
+      - c3.4xlarge
+      - c3.8xlarge
+      - c4.large
+      - c4.xlarge
+      - c4.2xlarge
+      - c4.4xlarge
+      - c4.8xlarge
+      - g2.2xlarge
+      - g2.8xlarge
+      - r3.large
+      - r3.xlarge
+      - r3.2xlarge
+      - r3.4xlarge
+      - r3.8xlarge
+      - i2.xlarge
+      - i2.2xlarge
+      - i2.4xlarge
+      - i2.8xlarge
+      - d2.xlarge
+      - d2.2xlarge
+      - d2.4xlarge
+      - d2.8xlarge
+      - hi1.4xlarge
+      - hs1.8xlarge
+      - cr1.8xlarge
+      - cc2.8xlarge
+      - cg1.4xlarge
+  SSHKeyPair:
+    Description: Ec2 Keypair Name
+    Type: AWS::EC2::KeyPair::KeyName
+  MinWorkerNodes:
+    Type: Number
+    Description: Minimum no. of Worker nodes in EKS Cluster
+    Default: 3
+  MaxWorkerNodes:
+    Type: Number
+    Description: Maximum no. of Worker nodes in EKS Cluster
+    Default: 5
+  DesiredWorkerNodes:
+    Type: Number
+    Description: Desired no. of Worker nodes in EKS Cluster
+    Default: 3
+  InstanceProfileRole:
+    Type: String
+    Description: Instance Profile Role ARN
+  CloudFormationEKSRole:
+    Type: String
+    Description: Cloudformation EKS Role ARN
+  DatabaseInstanceType:
+    Type: String
+    Default: db.t3.xlarge
+    Description: The Amazon RDS database instance class.
+    ConstraintDescription: Must be a valid RDS instance class.
+    Default: db.r4.large
+    AllowedValues:
+      - db.t2.small
+      - db.r3.xlarge
+      - db.r3.2xlarge
+      - db.r3.4xlarge
+      - db.r3.8xlarge
+      - db.r4.large
+      - db.r4.xlarge
+      - db.r4.2xlarge
+      - db.r4.4xlarge
+      - db.r4.8xlarge
+      - db.r4.16xlarge
+      - db.t3.xlarge
+  AcmCertArn:
+    Type: String
+    Description: Arn
+Resources:
+  EksCluster:
+    Type: AWS::CloudFormation::Stack
+    Properties: 
+      Parameters:
+        ClusterName: !Ref ClusterName
+        EksVersion: !Ref EksVersion
+        VpcCidrBlock: !Ref VpcCidrBlock
+        PublicSubnetCidrBlockA: !Ref PublicSubnetCidrBlockA
+        PublicSubnetCidrBlockB: !Ref PublicSubnetCidrBlockB
+        PublicSubnetCidrBlockC: !Ref PublicSubnetCidrBlockC
+        PublicSubnetCidrBlockD: !Ref PublicSubnetCidrBlockD
+        PrivateSubnetCidrBlockA: !Ref PrivateSubnetCidrBlockA
+        PrivateSubnetCidrBlockB: !Ref PrivateSubnetCidrBlockB
+        PrivateSubnetCidrBlockC: !Ref PrivateSubnetCidrBlockC
+        PrivateSubnetCidrBlockD: !Ref PrivateSubnetCidrBlockD
+        AvailabilityZones: 
+          !Join
+            - ','
+            - !Ref AvailabilityZones
+        NumberOfAZs: !Ref NumberOfAZs
+      TemplateURL: https://studio-eks.s3.amazonaws.com/templates/eks/components/curriki-eks-01-cluster.yml
+  EksNodeGroup:
+    DependsOn: EksCluster
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      Parameters:
+        ClusterName: !Ref ClusterName
+        EbsDiskSize: !Ref EbsDiskSize
+        InstanceType: !Ref InstanceType
+        SSHKeyPair: !Ref SSHKeyPair
+        MinWorkerNodes: !Ref MinWorkerNodes
+        MaxWorkerNodes: !Ref MaxWorkerNodes
+        DesiredWorkerNodes: !Ref DesiredWorkerNodes
+        PublicSubnets: !GetAtt EksCluster.Outputs.SubnetsPublic
+      TemplateURL: https://studio-eks.s3.amazonaws.com/templates/eks/components/curriki-eks-02-nodegroup.yml
+  DbStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: https://studio-eks.s3.amazonaws.com/templates/eks/components/curriki-eks-03-database-deploy.yml
+      TimeoutInMinutes: 60
+      Parameters:
+        MyVPC: !GetAtt EksCluster.Outputs.VPC
+        PrivateSubnets: !GetAtt EksCluster.Outputs.SubnetsPrivate
+        DatabaseInstanceType: !Ref DatabaseInstanceType
+  EksDeployment:
+    DependsOn: 
+      - EksNodeGroup
+      - DbStack
+    Type: AWS::CloudFormation::Stack
+    Properties: 
+      Parameters:
+        PublicSubnets: !GetAtt EksCluster.Outputs.SubnetsPublic
+        SSHKeyPair: !Ref SSHKeyPair
+        VpcId: !GetAtt EksCluster.Outputs.VPC
+        ClusterName: !Ref ClusterName
+        InstanceProfileRole: !Ref InstanceProfileRole
+        CloudFormationEKSRole: !Ref CloudFormationEKSRole
+        AvailabilityZones: 
+          !Join
+            - ','
+            - !Ref AvailabilityZones
+        NumberOfAZs: !Ref NumberOfAZs
+        AcmCertArn: !Ref AcmCertArn
+        VpcCidrBlock: !Ref VpcCidrBlock
+        Ec2SecurityGroupId: !GetAtt EksCluster.Outputs.Ec2SecurityGroupId
+        LaravelFrontEndUrl: !Ref LaravelFrontEndUrl
+        ReactAppPexelAPI: !Ref ReactAppPexelAPI
+        ReactAppGoogleCaptcha: !Ref ReactAppGoogleCaptcha
+        ReactAppGoogleApiClientId: !Ref ReactAppGoogleApiClientId
+        ReactAppHubspot: !Ref ReactAppHubspot
+        ReactAppH5PKey: !Ref ReactAppH5PKey
+      TemplateURL: https://studio-eks.s3.amazonaws.com/templates/eks/components/curriki-eks-04-deployment.yml
+        

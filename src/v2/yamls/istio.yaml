@@ -1,0 +1,54 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: curriki-gateway
+spec:
+  selector:
+    istio: ingressgateway # use istio default controller
+  servers:
+  - port:
+      number: 80
+      name: http
+      protocol: HTTP
+    hosts:
+    - "*"
+    tls:
+      httpsRedirect: true
+  - port:
+      number: 443
+      name: httpsport
+      protocol: HTTP
+    hosts:
+      - "*"
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: curriki
+spec:
+  hosts:
+  - "*"
+  gateways:
+  - curriki-gateway
+  http:
+  - match:
+    - uri:
+        prefix: /api/
+    rewrite:
+      uri: "/"
+    route:
+    - destination:
+        host: currikidev-api
+  - match:
+    - uri:
+        prefix: /
+    route:
+    - destination:
+        host: currikidev-client
+  - match:
+    - uri:
+        prefix: /admin/
+    route:
+    - destination:
+        host: currikidev-admin
+        

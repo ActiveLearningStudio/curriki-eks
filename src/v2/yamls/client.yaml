@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata: 
+  labels:
+    io.kompose.service: currikidev-client
+  name: currikidev-client
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      io.kompose.service: currikidev-client
+  strategy: {}
+  template:
+    metadata:
+      labels:
+        app: client
+        io.kompose.network/currikidev-laravel: "true"
+        io.kompose.service: currikidev-client
+    spec:
+      containers:
+      - image: curriki/client:1.0.0
+        imagePullPolicy: Always
+        name: currikidev-client
+        ports:
+        - containerPort: 3000
+        stdin: true
+        volumeMounts:
+          - mountPath: /var/app/current/env
+            name: "currikidev-client-secret"
+            readOnly: true
+      restartPolicy: Always
+      volumes:
+        - name: "currikidev-client-secret"
+          secret:
+            secretName: "currikidev-client-secret"
+
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: client
+    io.kompose.service: currikidev-client
+  name: currikidev-client
+spec:
+  type: ClusterIP
+  ports:
+  - name: "3000"
+    port: 3000
+    targetPort: 3000
+  selector:
+    io.kompose.service: currikidev-client
+
