@@ -1,0 +1,82 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'EKS Deployment via EC2 Instance'
+# Parameters:
+#   EC2InstanceProfile:
+#     Type: String
+#     Description: Instance Profile Name
+#   EC2InstanceRoleArn:
+#     Type: String
+#     Description: Instance Role Name
+  
+Resources:
+  
+  MyInstanceRole:
+    Type: AWS::IAM::Role
+    DependsOn:
+        - MyInstanceProfileRole
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+        - Effect: Allow
+          Action: sts:AssumeRole
+          Principal:
+            Service: 
+            - resources.cloudformation.amazonaws.com
+            - cloudformation.amazonaws.com
+            AWS: !GetAtt MyInstanceProfileRole.Arn
+      Path: '/' 
+      RoleName: CurrikiCloudformationRole
+      Policies:
+      - PolicyName: CurrikiAllPreviligesPolicy
+        PolicyDocument:
+          Version: 2012-10-17
+          Statement:
+          - Sid: CurrikiAllPreviliges
+            Action: "*"
+            Effect: Allow
+            Resource: "*"
+  MyInstanceProfileRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+        - Effect: Allow
+          Action: sts:AssumeRole
+          Principal:
+            Service: 
+            - ec2.amazonaws.com
+      Path: '/' 
+      RoleName: CurrikiInstanceProfileRole
+      Policies:
+      - PolicyName: CurrikiInstanceProfilePreviligesPolicy
+        PolicyDocument:
+          Version: 2012-10-17
+          Statement:
+          - Sid: CurrikiInstanceProfilePreviliges
+            Action: "*"
+            Effect: Allow
+            Resource: "*"
+  EC2InstanceProfile:
+    DependsOn:
+        - MyInstanceProfileRole 
+    Type: "AWS::IAM::InstanceProfile"
+    Properties: 
+      Path: "/"
+      Roles: 
+        - !Ref MyInstanceProfileRole
+
+Outputs:
+  EC2InstanceProfile:
+    Description: EC2InstanceProfile
+    Value: !Ref EC2InstanceProfile
+    Export:
+      Name: EC2InstanceProfile
+  EC2InstanceRoleArn:
+    Description: EC2InstanceRoleArn
+    Value:
+      !GetAtt MyInstanceRole.Arn
+    Export:
+      Name: EC2InstanceRoleArn
+
