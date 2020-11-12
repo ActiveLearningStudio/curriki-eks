@@ -160,12 +160,12 @@ Parameters:
     Type: Number
     Description: Desired no. of Worker nodes in EKS Cluster
     Default: 3
-  InstanceProfileRole:
+  EC2InstanceProfile: #CurrikiStackRole	
     Type: String
-    Description: Instance Profile Role ARN
-  CloudFormationEKSRole:
+    Description: Instance Profile Name
+  EC2InstanceRoleArn: # arn:aws:iam::946488682732:role/CloudFormationRegistryResourceLogRole	
     Type: String
-    Description: Cloudformation EKS Role ARN
+    Description: EC2 Instance Profile ARN
   DatabaseInstanceType:
     Type: String
     Default: db.t3.xlarge
@@ -244,8 +244,8 @@ Resources:
         SSHKeyPair: !Ref SSHKeyPair
         VpcId: !GetAtt EksCluster.Outputs.VPC
         ClusterName: !Ref ClusterName
-        InstanceProfileRole: !Ref InstanceProfileRole
-        CloudFormationEKSRole: !Ref CloudFormationEKSRole
+        EC2InstanceProfile: !Ref EC2InstanceProfile
+        EC2InstanceRoleArn: !Ref EC2InstanceRoleArn
         AvailabilityZones: 
           !Join
             - ','

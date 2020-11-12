@@ -29,12 +29,12 @@ Parameters:
   ClusterName: 
     Type: String
     Description: Name of your managed EKS Cluster
-  InstanceProfileRole:
+  EC2InstanceProfile:
     Type: String
-    Description: Instance Profile Role ARN
-  CloudFormationEKSRole:
+    Description: Instance Profile Name
+  EC2InstanceRoleArn:
     Type: String
-    Description: Cloudformation EKS Role ARN
+    Description: Instance Role Name
   Ec2SecurityGroupId: 
     Type: String
   AcmCertArn:
@@ -81,19 +81,17 @@ Conditions:
     - !Equals [ '6', !Ref NumberOfAZs ]
   
 Resources:
-  EC2InstanceProfile: 
-    Type: "AWS::IAM::InstanceProfile"
-    Properties: 
-      Path: "/"
-      Roles: 
-        - !Ref InstanceProfileRole
+  # EC2InstanceProfile: 
+  #   Type: "AWS::IAM::InstanceProfile"
+  #   Properties: 
+  #     Path: "/"
+  #     Roles: 
+  #       - !Ref InstanceProfileRole
 
   Ec2Instance:
     DependsOn:
       - EksEfsFileSystem
-      - EC2InstanceProfile
     Type: AWS::EC2::Instance
-    IamInstanceProfile: !Ref EC2InstanceProfile
     Metadata:
       'AWS::CloudFormation::Init':
         configSets:
@@ -106,13 +104,14 @@ Resources:
               mode: '000755'
               owner: root
               group: root
-    CreationPolicy: # <--- creation policy with timeout of 5 minutes
+    CreationPolicy:
       ResourceSignal:
         Timeout: PT30M
     Properties: 
       ImageId: !Ref AmiId
       InstanceType: t2.micro
       KeyName: !Ref SSHKeyPair
+      IamInstanceProfile: !Ref EC2InstanceProfile
       SecurityGroupIds: 
         - !Ref Ec2SecurityGroupId
       SubnetId: !Select [0, !Split [',', !Ref PublicSubnets]]
@@ -128,9 +127,8 @@ Resources:
             yum install jq -y
             yum install git -y
             amazon-linux-extras install postgresql11 -y
-            aws sts assume-role --role-arn ${CloudFormationEKSRole} --role-session-name first
-            aws eks update-kubeconfig --name ${ClusterName} --region ${AWS::Region} --role-arn ${CloudFormationEKSRole}
-            aws eks update-kubeconfig --name ${ClusterName} --region ${AWS::Region}
+            aws sts assume-role --role-arn ${EC2InstanceRoleArn} --role-session-name first
+            aws eks update-kubeconfig --name ${ClusterName} --region ${AWS::Region} --role-arn ${EC2InstanceRoleArn}
             mkdir ~/efs-mount
             sudo mount -t nfs4 -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport ${EksEfsFileSystem}.efs.${AWS::Region}.amazonaws.com:/ ~/efs-mount
             git clone -b develop https://github.com/ActiveLearningStudio/curriki-eks.git
