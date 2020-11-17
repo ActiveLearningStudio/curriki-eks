@@ -1,12 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: 'EKS Deployment via EC2 Instance'
-# Parameters:
-#   EC2InstanceProfile:
-#     Type: String
-#     Description: Instance Profile Name
-#   EC2InstanceRoleArn:
-#     Type: String
-#     Description: Instance Role Name
   
 Resources:
   
