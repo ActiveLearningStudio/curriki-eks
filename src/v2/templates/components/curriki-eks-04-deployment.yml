@@ -189,7 +189,7 @@ Resources:
             sleep 20
             password=$(cut -d' ' -f69 <<< $(kubectl exec -it $(kubectl get pods | grep elasticsearch-client | sed -n 1p | awk '{print $1}') -- bin/elasticsearch-setup-passwords auto -b))
             sed -i "s/elasticsearch-pw-elastic/$password/g" /curriki-eks/src/v2/yamls/kibana.yml
-            kubectl apply -f /curriki-eks/src/v2/yamls/kibana.yml
+            sudo kubectl apply -f /curriki-eks/src/v2/yamls/kibana.yml
             curl -L https://istio.io/downloadIstio | ISTIO_VERSION=1.7.3 TARGET_ARCH=x86_64 sh -
             escaped=$(echo ${AcmCertArn} | sed 's%/%\\/%g')
             sed "s/substitute-me-acm-cert-substitute-me/$escaped/g" /curriki-eks/src/v2/yamls/istio-install.yaml  > /curriki-eks/src/v2/yamls/istio-install.yaml.new
