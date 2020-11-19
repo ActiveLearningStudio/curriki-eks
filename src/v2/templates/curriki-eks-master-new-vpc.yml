@@ -209,7 +209,7 @@ Resources:
             - ','
             - !Ref AvailabilityZones
         NumberOfAZs: !Ref NumberOfAZs
-      TemplateURL: https://studio-eks.s3.amazonaws.com/src/v2/templates/components/curriki-eks-01-cluster.yml
+      TemplateURL: https://curriki-nested-cft.s3.us-east-2.amazonaws.comcurriki-eks-01-cluster.yml
   EksNodeGroup:
     DependsOn: EksCluster
     Type: AWS::CloudFormation::Stack
@@ -223,11 +223,11 @@ Resources:
         MaxWorkerNodes: !Ref MaxWorkerNodes
         DesiredWorkerNodes: !Ref DesiredWorkerNodes
         PublicSubnets: !GetAtt EksCluster.Outputs.SubnetsPublic
-      TemplateURL: https://studio-eks.s3.amazonaws.com/src/v2/templates/components/curriki-eks-02-nodegroup.yml
+      TemplateURL: https://curriki-nested-cft.s3.us-east-2.amazonaws.comcurriki-eks-02-nodegroup.yml
   DbStack:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: https://studio-eks.s3.amazonaws.com/src/v2/templates/components/curriki-eks-03-database-deploy.yml
+      TemplateURL: https://curriki-nested-cft.s3.us-east-2.amazonaws.com/curriki-eks-03-database-deploy.yml
       TimeoutInMinutes: 60
       Parameters:
         MyVPC: !GetAtt EksCluster.Outputs.VPC
@@ -261,5 +261,5 @@ Resources:
         ReactAppHubspot: !Ref ReactAppHubspot
         ReactAppH5PKey: !Ref ReactAppH5PKey
         RdsInstanceSecret: !GetAtt DbStack.Outputs.MyRDSInstanceSecret
-      TemplateURL: https://studio-eks.s3.amazonaws.com/src/v2/templates/components/curriki-eks-04-deployment.yml
+      TemplateURL: https://curriki-nested-cft.s3.us-east-2.amazonaws.com/curriki-eks-04-deployment.yml
         
