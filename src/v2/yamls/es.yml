@@ -16,8 +16,6 @@ data:
       master: true
       data: false
       ingest: false
-    xpack.security.enabled: true
-    xpack.monitoring.collection.enabled: true
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -37,8 +35,6 @@ data:
       master: false
       data: true
       ingest: false
-    xpack.security.enabled: true
-    xpack.monitoring.collection.enabled: true
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -58,8 +54,6 @@ data:
       master: false
       data: false
       ingest: true
-    xpack.security.enabled: true
-    xpack.monitoring.collection.enabled: true
 ---
 apiVersion: apps/v1
 kind: StatefulSet
