@@ -209,9 +209,9 @@ Resources:
             - ','
             - !Ref AvailabilityZones
         NumberOfAZs: !Ref NumberOfAZs
-      TemplateURL: https://curriki-nested-cft.s3.us-east-2.amazonaws.comcurriki-eks-01-cluster.yml
-  EksNodeGroup:
-    DependsOn: EksCluster
+      TemplateURL: https://curriki-nested-cft.s3.us-east-2.amazonaws.com/curriki-eks-01-cluster.yml
+  EksNodeGroup:  
+    DependsOn: EksCluster  
     Type: AWS::CloudFormation::Stack
     Properties:
       Parameters:
