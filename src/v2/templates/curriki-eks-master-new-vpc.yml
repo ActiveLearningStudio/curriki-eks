@@ -210,8 +210,8 @@ Resources:
             - !Ref AvailabilityZones
         NumberOfAZs: !Ref NumberOfAZs
       TemplateURL: https://studio-eks.s3.amazonaws.com/src/v2/templates/components/curriki-eks-01-cluster.yml
-  EksNodeGroup:
-    DependsOn: EksCluster
+  EksNodeGroup:  
+    DependsOn: EksCluster  
     Type: AWS::CloudFormation::Stack
     Properties:
       Parameters:
@@ -260,5 +260,5 @@ Resources:
         ReactAppGoogleApiClientId: !Ref ReactAppGoogleApiClientId
         ReactAppHubspot: !Ref ReactAppHubspot
         ReactAppH5PKey: !Ref ReactAppH5PKey
+        RdsInstanceSecret: !GetAtt DbStack.Outputs.MyRDSInstanceSecret
       TemplateURL: https://studio-eks.s3.amazonaws.com/src/v2/templates/components/curriki-eks-04-deployment.yml
-        

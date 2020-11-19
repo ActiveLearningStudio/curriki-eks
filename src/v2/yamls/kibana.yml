@@ -6,11 +6,10 @@ metadata:
     app: kibana
 data:
   kibana.yml: |-
-    server.host: 0.0.0.0
-    elasticsearch:
-      hosts: ${ELASTICSEARCH_URL}
-      username: ${ELASTICSEARCH_USER}
-      password: ${ELASTICSEARCH_PASSWORD}
+    # Default Kibana configuration for docker target
+    server.name: kibana
+    server.host: "0"
+    elasticsearch.hosts: [ "${ELASTICSEARCH_URL}" ]
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -34,10 +33,6 @@ spec:
         env:
         - name: ELASTICSEARCH_URL
           value: "http://elasticsearch-client:9200"
-        - name: ELASTICSEARCH_USER
-          value: "elastic"
-        - name: ELASTICSEARCH_PASSWORD
-          value: elasticsearch-pw-elastic
         ports:
         - containerPort: 5601
           name: kibana

@@ -84,7 +84,6 @@ Resources:
     Type: AWS::SecretsManager::Secret
     Properties:
       Description: This is my rds instance secret
-      Name: CurrikiStudioRDSCredentials
       GenerateSecretString:
         SecretStringTemplate: '{"username": "curriki"}'
         GenerateStringKey: password
@@ -99,3 +98,5 @@ Outputs:
       - Endpoint.Address
     Export:
       Name: DatabaseEndpointURL
+  MyRDSInstanceSecret:
+    Value: !Ref MyRDSInstanceRotationSecret

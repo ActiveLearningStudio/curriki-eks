@@ -67,6 +67,8 @@ Parameters:
     Type: AWS::SSM::Parameter::Value<String>
     Description: ParameterStore name of the Parameter containing Ubuntu AMI
     Default: /aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2
+  RdsInstanceSecret:
+    Type: String
 Conditions:
   CreateTwoTargets:
     !Equals [ '2', !Ref NumberOfAZs ]
@@ -130,7 +132,7 @@ Resources:
             aws eks update-kubeconfig --name ${ClusterName} --region ${AWS::Region} --role-arn ${EC2InstanceRoleArn}
             mkdir ~/efs-mount
             sudo mount -t nfs4 -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport ${EksEfsFileSystem}.efs.${AWS::Region}.amazonaws.com:/ ~/efs-mount
-            git clone -b develop https://github.com/ActiveLearningStudio/curriki-eks.git
+            git clone -b eks-gul/v2 https://github.com/ActiveLearningStudio/curriki-eks.git
             unzip /curriki-eks/storage/storage.zip -d ~/efs-mount
             sed -i 's/substitute-me-efs-id/${EksEfsFileSystem}/g' /curriki-eks/src/v2/yamls/efs-provisioner.yml
             sed -i 's/substitute-me-efs-region/${AWS::Region}/g' /curriki-eks/src/v2/yamls/efs-provisioner.yml
@@ -164,11 +166,11 @@ Resources:
             escaped=$(echo ${LaravelFrontEndUrl} | sed 's%/%\\/%g')
             sed "s/currikifrontendurl/$escaped/g" /curriki-eks/envs/.env  > /curriki-eks/envs/.env.new
             mv /curriki-eks/envs/.env.new /curriki-eks/envs/.env
-            aws --region ${AWS::Region} secretsmanager get-secret-value --secret-id CurrikiStudioRDSCredentials --query SecretString --output text | jq -r .password > /curriki-eks/envs/password
-            aws --region ${AWS::Region} secretsmanager get-secret-value --secret-id CurrikiStudioRDSCredentials --query SecretString --output text | jq -r .dbname > /curriki-eks/envs/dbname
-            aws --region ${AWS::Region} secretsmanager get-secret-value --secret-id CurrikiStudioRDSCredentials --query SecretString --output text | jq -r .port > /curriki-eks/envs/port
-            aws --region ${AWS::Region} secretsmanager get-secret-value --secret-id CurrikiStudioRDSCredentials --query SecretString --output text | jq -r .host > /curriki-eks/envs/host
-            aws --region ${AWS::Region} secretsmanager get-secret-value --secret-id CurrikiStudioRDSCredentials --query SecretString --output text | jq -r .username > /curriki-eks/envs/username
+            aws --region ${AWS::Region} secretsmanager get-secret-value --secret-id ${RdsInstanceSecret} --query SecretString --output text | jq -r .password > /curriki-eks/envs/password
+            aws --region ${AWS::Region} secretsmanager get-secret-value --secret-id ${RdsInstanceSecret} --query SecretString --output text | jq -r .dbname > /curriki-eks/envs/dbname
+            aws --region ${AWS::Region} secretsmanager get-secret-value --secret-id ${RdsInstanceSecret} --query SecretString --output text | jq -r .port > /curriki-eks/envs/port
+            aws --region ${AWS::Region} secretsmanager get-secret-value --secret-id ${RdsInstanceSecret} --query SecretString --output text | jq -r .host > /curriki-eks/envs/host
+            aws --region ${AWS::Region} secretsmanager get-secret-value --secret-id ${RdsInstanceSecret} --query SecretString --output text | jq -r .username > /curriki-eks/envs/username
             sed -i "s/currikidbhost/$(cat /curriki-eks/envs/host | sed 's%&%\\&%g')/g" /curriki-eks/envs/.env
             sed -i "s/currikidbport/$(cat /curriki-eks/envs/port | sed 's%&%\\&%g')/g" /curriki-eks/envs/.env
             sed -i "s/currikidbdatabase/$(cat /curriki-eks/envs/dbname | sed 's%&%\\&%g')/g" /curriki-eks/envs/.env
@@ -185,9 +187,7 @@ Resources:
             sudo kubectl apply -f /curriki-eks/src/v2/yamls/client.yaml
             sudo kubectl apply -f /curriki-eks/src/v2/yamls/es.yml
             sudo kubectl apply -f /curriki-eks/src/v2/yamls/es-svc.yml
-            sleep 20
-            password=$(cut -d' ' -f69 <<< $(kubectl exec -it $(kubectl get pods | grep elasticsearch-client | sed -n 1p | awk '{print $1}') -- bin/elasticsearch-setup-passwords auto -b))
-            sed -i "s/elasticsearch-pw-elastic/$password/g" /curriki-eks/src/v2/yamls/kibana.yml
+            sleep 60
             sudo kubectl apply -f /curriki-eks/src/v2/yamls/kibana.yml
             curl -L https://istio.io/downloadIstio | ISTIO_VERSION=1.7.3 TARGET_ARCH=x86_64 sh -
             escaped=$(echo ${AcmCertArn} | sed 's%/%\\/%g')
