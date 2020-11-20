@@ -69,6 +69,11 @@ Parameters:
     Default: /aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2
   RdsInstanceSecret:
     Type: String
+  ElasticSearchUser:
+    Type: String
+  ElasticSearchPassword:
+    Type: String
+    NoEcho: true
 Conditions:
   CreateTwoTargets:
     !Equals [ '2', !Ref NumberOfAZs ]
@@ -83,13 +88,6 @@ Conditions:
     - !Equals [ '6', !Ref NumberOfAZs ]
   
 Resources:
-  # EC2InstanceProfile: 
-  #   Type: "AWS::IAM::InstanceProfile"
-  #   Properties: 
-  #     Path: "/"
-  #     Roles: 
-  #       - !Ref InstanceProfileRole
-
   Ec2Instance:
     DependsOn:
       - EksEfsFileSystem
@@ -131,6 +129,7 @@ Resources:
             amazon-linux-extras install postgresql11 -y
             aws eks update-kubeconfig --name ${ClusterName} --region ${AWS::Region} --role-arn ${EC2InstanceRoleArn}
             mkdir ~/efs-mount
+            sleep 120
             sudo mount -t nfs4 -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport ${EksEfsFileSystem}.efs.${AWS::Region}.amazonaws.com:/ ~/efs-mount
             git clone -b eks-gul/v2 https://github.com/ActiveLearningStudio/curriki-eks.git
             unzip /curriki-eks/storage/storage.zip -d ~/efs-mount
@@ -185,9 +184,13 @@ Resources:
             sudo kubectl apply -f /curriki-eks/src/v2/yamls/efs-provisioner.yml
             sudo kubectl apply -f /curriki-eks/src/v2/yamls/api.yaml
             sudo kubectl apply -f /curriki-eks/src/v2/yamls/client.yaml
+            sed -i 's/update-eks-cluster-name/${ClusterName}/g' /curriki-eks/src/v2/yamls/es.yml
             sudo kubectl apply -f /curriki-eks/src/v2/yamls/es.yml
             sudo kubectl apply -f /curriki-eks/src/v2/yamls/es-svc.yml
             sleep 60
+            sudo kubectl exec -i $(sudo kubectl get pods | grep elasticsearch-client | sed -n 1p | awk '{print $1}') -- bin/elasticsearch-users useradd ${ElasticSearchUser} -p ${ElasticSearchPassword} -r superuser
+            sed -i 's/update-eks-es-user/${ElasticSearchUser}/g' /curriki-eks/src/v2/yamls/kibana.yml
+            sed -i 's/update-eks-es-password/${ElasticSearchPassword}/g' /curriki-eks/src/v2/yamls/kibana.yml
             sudo kubectl apply -f /curriki-eks/src/v2/yamls/kibana.yml
             curl -L https://istio.io/downloadIstio | ISTIO_VERSION=1.7.3 TARGET_ARCH=x86_64 sh -
             escaped=$(echo ${AcmCertArn} | sed 's%/%\\/%g')

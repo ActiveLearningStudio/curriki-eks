@@ -188,6 +188,11 @@ Parameters:
   AcmCertArn:
     Type: String
     Description: Arn
+  ElasticSearchUser:
+    Type: String
+  ElasticSearchPassword:
+    Type: String
+    NoEcho: true
 Resources:
   EksCluster:
     Type: AWS::CloudFormation::Stack
@@ -261,4 +266,6 @@ Resources:
         ReactAppHubspot: !Ref ReactAppHubspot
         ReactAppH5PKey: !Ref ReactAppH5PKey
         RdsInstanceSecret: !GetAtt DbStack.Outputs.MyRDSInstanceSecret
+        ElasticSearchUser: !Ref ElasticSearchUser
+        ElasticSearchPassword: !Ref ElasticSearchPassword
       TemplateURL: https://studio-eks.s3.amazonaws.com/src/v2/templates/components/curriki-eks-04-deployment.yml
