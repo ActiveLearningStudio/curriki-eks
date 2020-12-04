@@ -5,8 +5,6 @@ Resources:
   
   MyInstanceRole:
     Type: AWS::IAM::Role
-    DependsOn:
-        - MyInstanceProfileRole
     Properties:
       AssumeRolePolicyDocument:
         Version: 2012-10-17
@@ -17,11 +15,14 @@ Resources:
             Service: 
             - resources.cloudformation.amazonaws.com
             - cloudformation.amazonaws.com
-            AWS: !GetAtt MyInstanceProfileRole.Arn
+            - ec2.amazonaws.com
+            # AWS: !GetAtt MyInstanceProfileRole.Arn
       Path: '/' 
-      RoleName: CurrikiCloudformationRole
+      RoleName: 
+        Fn::Sub: "${AWS::StackName}-CurrikiCloudformationRole" #change role name, like curriki-kubernetes
       Policies:
-      - PolicyName: CurrikiAllPreviligesPolicy
+      - PolicyName: 
+          Fn::Sub: "${AWS::StackName}-CurrikiAllPreviligesPolicy"
         PolicyDocument:
           Version: 2012-10-17
           Statement:
@@ -29,36 +30,38 @@ Resources:
             Action: "*"
             Effect: Allow
             Resource: "*"
-  MyInstanceProfileRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-        - Effect: Allow
-          Action: sts:AssumeRole
-          Principal:
-            Service: 
-            - ec2.amazonaws.com
-      Path: '/' 
-      RoleName: CurrikiInstanceProfileRole
-      Policies:
-      - PolicyName: CurrikiInstanceProfilePreviligesPolicy
-        PolicyDocument:
-          Version: 2012-10-17
-          Statement:
-          - Sid: CurrikiInstanceProfilePreviliges
-            Action: "*"
-            Effect: Allow
-            Resource: "*"
+  # MyInstanceProfileRole:
+  #   Type: AWS::IAM::Role
+  #   Properties:
+  #     AssumeRolePolicyDocument:
+  #       Version: 2012-10-17
+  #       Statement:
+  #       - Effect: Allow
+  #         Action: sts:AssumeRole
+  #         Principal:
+  #           Service: 
+  #           - ec2.amazonaws.com
+  #     Path: '/' 
+  #     RoleName: 
+  #       Fn::Sub: "${AWS::StackName}-CurrikiInstanceProfileRole"
+  #     Policies:
+  #     - PolicyName: 
+  #         Fn::Sub: "${AWS::StackName}-CurrikiInstanceProfilePreviligesPolicy"
+  #       PolicyDocument:
+  #         Version: 2012-10-17
+  #         Statement:
+  #         - Sid: CurrikiInstanceProfilePreviliges
+  #           Action: "*"
+  #           Effect: Allow
+  #           Resource: "*"
   EC2InstanceProfile:
-    DependsOn:
-        - MyInstanceProfileRole 
+    # DependsOn:
+        # - MyInstanceProfileRole  #remove this
     Type: "AWS::IAM::InstanceProfile"
     Properties: 
       Path: "/"
       Roles: 
-        - !Ref MyInstanceProfileRole
+        - !Ref MyInstanceRole
 
 Outputs:
   EC2InstanceProfile:
