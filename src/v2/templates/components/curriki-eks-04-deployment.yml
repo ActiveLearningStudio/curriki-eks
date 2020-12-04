@@ -93,17 +93,209 @@ Resources:
       - EksEfsFileSystem
     Type: AWS::EC2::Instance
     Metadata:
-      'AWS::CloudFormation::Init':
+      AWS::CloudFormation::Init:
         configSets:
-          Install:
-          - Install
-        Install:
+          app_deployment:
+          - install_cfn
+          - install_packages
+          - efs_mount
+          - config_update
+          - configure_postgres
+          - deploy_application
+          - configure_istio
+        install_cfn:
           files:
-            /tmp/test.txt:
-              content: Done!
-              mode: '000755'
+            "/etc/cfn/cfn-hup.conf":
+              content:
+                Fn::Join:
+                - ''
+                - - "[main]\n"
+                  - stack=
+                  - Ref: AWS::StackId
+                  - "\n"
+                  - region=
+                  - Ref: AWS::Region
+                  - "\n"
+              mode: '000400'
               owner: root
               group: root
+            "/etc/cfn/hooks.d/cfn-auto-reloader.conf":
+              content:
+                !Sub |
+                  [cfn-auto-reloader-hook]
+                  triggers=post.update
+                  path=Resources.Ec2Instance.Metadata.AWS::CloudFormation::Init
+                  action=/opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource Ec2Instance --configsets app_deployment --region ${AWS::Region} 
+              mode: '000400'
+              owner: root
+              group: root
+          services:
+            sysvinit:
+              cfn-hup:
+                enabled: 'true'
+                ensureRunning: 'true'
+                files:
+                - "/etc/cfn/cfn-hup.conf"
+                - "/etc/cfn/hooks.d/cfn-auto-reloader.conf"
+        install_packages:
+          packages:
+            yum:
+              jq: []
+              git: []
+              amazon-efs-utils: []
+            amazon-linux-extras:
+              postgresql11: []
+          files:
+            "/tmp/kubectl_setup":
+              content:
+                !Sub |
+                  #!/bin/bash -xe
+                  amazon-linux-extras install postgresql11 -y
+                  curl -o kubectl https://amazon-eks.s3.us-west-2.amazonaws.com/1.18.8/2020-09-18/bin/linux/amd64/kubectl
+                  chmod +x ./kubectl
+                  sudo mv ./kubectl /bin/
+              mode: '000700'
+              owner: root
+              group: root
+          commands:
+            01_install_kubectl:
+              command: "/tmp/kubectl_setup"
+            02_configure_kubectl:
+              command: 
+                !Sub |
+                  aws eks update-kubeconfig --name ${ClusterName} --region ${AWS::Region} --role-arn ${EC2InstanceRoleArn}
+        efs_mount:
+          files:
+            "/tmp/mount_efs":
+              content:
+                !Sub |
+                  #!/bin/bash -xe
+                  mkdir ~/efs-mount
+                  sleep 120
+                  sudo mount -t nfs4 -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport ${EksEfsFileSystem}.efs.${AWS::Region}.amazonaws.com:/ ~/efs-mount
+                  cd /
+                  git clone -b eks-gul/v2 https://github.com/ActiveLearningStudio/curriki-eks.git
+                  unzip /curriki-eks/storage/storage.zip -d ~/efs-mount
+              mode: '000700'
+              owner: root
+              group: root
+          commands:
+            01_efs_mount:
+              command: "/tmp/mount_efs"
+              cwd: "~/"
+        config_update:
+          files:
+            "/tmp/config_update":
+              content:
+                !Sub |
+                  #!/bin/bash -xe
+                  sed -i 's/substitute-me-efs-id/${EksEfsFileSystem}/g' /curriki-eks/src/v2/yamls/efs-provisioner.yml
+                  sed -i 's/substitute-me-efs-region/${AWS::Region}/g' /curriki-eks/src/v2/yamls/efs-provisioner.yml
+                  sed -i 's/substitute-me-efs-dns-name/${EksEfsFileSystem}.efs.${AWS::Region}.amazonaws.com/g' /curriki-eks/src/v2/yamls/efs-provisioner.yml
+                  cp /curriki-eks/envs/.env.client.example /curriki-eks/envs/.env.local
+                  escaped=$(echo ${ReactAppPexelAPI} | sed 's%/%\\/%g')
+                  sed "s/reactapppexelapi/$escaped/g" /curriki-eks/envs/.env.local  > /curriki-eks/envs/.env.local.new
+                  mv /curriki-eks/envs/.env.local.new /curriki-eks/envs/.env.local
+                  escaped=$(echo ${LaravelFrontEndUrl}/api/api | sed 's%/%\\/%g')
+                  sed "s/reactappapiurl/$escaped/g" /curriki-eks/envs/.env.local  > /curriki-eks/envs/.env.local.new
+                  mv /curriki-eks/envs/.env.local.new /curriki-eks/envs/.env.local
+                  escaped=$(echo ${LaravelFrontEndUrl}/api | sed 's%/%\\/%g')
+                  sed "s/reactappresourceurl/$escaped/g" /curriki-eks/envs/.env.local  > /curriki-eks/envs/.env.local.new
+                  mv /curriki-eks/envs/.env.local.new /curriki-eks/envs/.env.local
+                  escaped=$(echo ${ReactAppGoogleCaptcha} | sed 's%/%\\/%g')
+                  sed "s/reactappgooglecaptcha/$escaped/g" /curriki-eks/envs/.env.local  > /curriki-eks/envs/.env.local.new
+                  mv /curriki-eks/envs/.env.local.new /curriki-eks/envs/.env.local
+                  escaped=$(echo ${ReactAppGoogleApiClientId} | sed 's%/%\\/%g')
+                  sed "s/reactappgoogleapiclientid/$escaped/g" /curriki-eks/envs/.env.local  > /curriki-eks/envs/.env.local.new
+                  mv /curriki-eks/envs/.env.local.new /curriki-eks/envs/.env.local
+                  escaped=$(echo ${ReactAppHubspot} | sed 's%/%\\/%g')
+                  sed "s/reactapphubspot/$escaped/g" /curriki-eks/envs/.env.local  > /curriki-eks/envs/.env.local.new
+                  mv /curriki-eks/envs/.env.local.new /curriki-eks/envs/.env.local
+                  escaped=$(echo ${ReactAppH5PKey} | sed 's%/%\\/%g')
+                  sed "s/reactapph5pkey/$escaped/g" /curriki-eks/envs/.env.local  > /curriki-eks/envs/.env.local.new
+                  mv /curriki-eks/envs/.env.local.new /curriki-eks/envs/.env.local
+                  cp /curriki-eks/envs/.env.api.example /curriki-eks/envs/.env
+                  escaped=$(echo ${LaravelFrontEndUrl}/api | sed 's%/%\\/%g')
+                  sed "s/currikiappurl/$escaped/g" /curriki-eks/envs/.env  > /curriki-eks/envs/.env.new
+                  mv /curriki-eks/envs/.env.new /curriki-eks/envs/.env
+                  escaped=$(echo ${LaravelFrontEndUrl} | sed 's%/%\\/%g')
+                  sed "s/currikifrontendurl/$escaped/g" /curriki-eks/envs/.env  > /curriki-eks/envs/.env.new
+                  mv /curriki-eks/envs/.env.new /curriki-eks/envs/.env
+                  sed -i 's/update-eks-cluster-name/${ClusterName}/g' /curriki-eks/src/v2/yamls/es.yml
+                  sed -i 's/update-eks-es-user/${ElasticSearchUser}/g' /curriki-eks/src/v2/yamls/kibana.yml
+                  sed -i 's/update-eks-es-password/${ElasticSearchPassword}/g' /curriki-eks/src/v2/yamls/kibana.yml
+                  escaped=$(echo ${AcmCertArn} | sed 's%/%\\/%g')
+                  sed "s/substitute-me-acm-cert-substitute-me/$escaped/g" /curriki-eks/src/v2/yamls/istio-install.yaml  > /curriki-eks/src/v2/yamls/istio-install.yaml.new
+                  mv /curriki-eks/src/v2/yamls/istio-install.yaml.new /curriki-eks/src/v2/yamls/istio-install.yaml
+              mode: '000700'
+              owner: root
+              group: root
+          commands:
+            01_config_update: 
+              command: "/tmp/config_update"
+        configure_postgres:
+          files:
+            "/tmp/configure_postgres":
+              content:
+                !Sub |
+                  #!/bin/bash -xe
+                  aws --region ${AWS::Region} secretsmanager get-secret-value --secret-id ${RdsInstanceSecret} --query SecretString --output text | jq -r .password > /curriki-eks/envs/password
+                  aws --region ${AWS::Region} secretsmanager get-secret-value --secret-id ${RdsInstanceSecret} --query SecretString --output text | jq -r .dbname > /curriki-eks/envs/dbname
+                  aws --region ${AWS::Region} secretsmanager get-secret-value --secret-id ${RdsInstanceSecret} --query SecretString --output text | jq -r .port > /curriki-eks/envs/port
+                  aws --region ${AWS::Region} secretsmanager get-secret-value --secret-id ${RdsInstanceSecret} --query SecretString --output text | jq -r .host > /curriki-eks/envs/host
+                  aws --region ${AWS::Region} secretsmanager get-secret-value --secret-id ${RdsInstanceSecret} --query SecretString --output text | jq -r .username > /curriki-eks/envs/username
+                  sed -i "s/currikidbhost/$(cat /curriki-eks/envs/host | sed 's%&%\\&%g')/g" /curriki-eks/envs/.env
+                  sed -i "s/currikidbport/$(cat /curriki-eks/envs/port | sed 's%&%\\&%g')/g" /curriki-eks/envs/.env
+                  sed -i "s/currikidbdatabase/$(cat /curriki-eks/envs/dbname | sed 's%&%\\&%g')/g" /curriki-eks/envs/.env
+                  sed -i "s/currikidbusername/$(cat /curriki-eks/envs/username | sed 's%&%\\&%g')/g" /curriki-eks/envs/.env
+                  sed -i "s/currikidbpass/$(cat /curriki-eks/envs/password | sed 's%&%\\&%g')/g" /curriki-eks/envs/.env
+                  export PGPASSWORD="$(cat /curriki-eks/envs/password)"     
+                  psql -h $(cat /curriki-eks/envs/host) -U $(cat /curriki-eks/envs/username) -d $(cat /curriki-eks/envs/dbname) -w < /curriki-eks/db/studio-initial-db.sql
+              mode: '000700'
+              owner: root
+              group: root
+          commands:
+            01_configure_postgres:
+              command: "/tmp/configure_postgres"
+        deploy_application:
+          files:
+            "/tmp/deploy_application":
+              content:
+                !Sub |
+                  #!/bin/bash -xe
+                  sudo kubectl create secret generic currikidev-api-secret --from-file=/curriki-eks/envs/.env
+                  sudo kubectl create secret generic currikidev-client-secret --from-file=/curriki-eks/envs/.env.local
+                  sudo kubectl apply -k "github.com/kubernetes-sigs/aws-efs-csi-driver/deploy/kubernetes/overlays/stable/?ref=master"
+                  sudo kubectl apply -f /curriki-eks/src/v2/yamls/rbac.yml
+                  sudo kubectl apply -f /curriki-eks/src/v2/yamls/efs-provisioner.yml
+                  sudo kubectl apply -f /curriki-eks/src/v2/yamls/api.yaml
+                  sudo kubectl apply -f /curriki-eks/src/v2/yamls/client.yaml
+                  sudo kubectl apply -f /curriki-eks/src/v2/yamls/es.yml
+                  sudo kubectl apply -f /curriki-eks/src/v2/yamls/es-svc.yml
+                  sleep 60
+                  sudo kubectl exec -i $(sudo kubectl get pods | grep elasticsearch-client | sed -n 1p | awk '{print $1}') -- bin/elasticsearch-users useradd ${ElasticSearchUser} -p ${ElasticSearchPassword} -r superuser
+                  sudo kubectl apply -f /curriki-eks/src/v2/yamls/kibana.yml
+              mode: '000700'
+              owner: root
+              group: root
+          commands:
+            01_deploy_application:
+              command: "/tmp/deploy_application"
+        configure_istio:
+          files:
+            "/tmp/configure_istio":
+              content:
+                !Sub |
+                  curl -L https://istio.io/downloadIstio | ISTIO_VERSION=1.7.3 TARGET_ARCH=x86_64 sh -
+                  sudo /istio-1.7.3/bin/istioctl install --set profile=demo -f /curriki-eks/src/v2/yamls/istio-install.yaml
+                  sudo kubectl label namespace default istio-injection=enabled
+                  sudo kubectl apply -f /curriki-eks/src/v2/yamls/istio.yaml
+              mode: '000700'
+              owner: root
+              group: root
+          commands:
+            01_configure_istio:
+              command: "/tmp/configure_istio"
     CreationPolicy:
       ResourceSignal:
         Timeout: PT30M
@@ -118,88 +310,9 @@ Resources:
       UserData: 
         Fn::Base64: 
           !Sub |
-            #!/bin/bash
-            yum update -y
-            yum install -y amazon-efs-utils
-            curl -o kubectl https://amazon-eks.s3.us-west-2.amazonaws.com/1.18.8/2020-09-18/bin/linux/amd64/kubectl
-            chmod +x ./kubectl
-            sudo mv ./kubectl /bin/
-            yum install jq -y
-            yum install git -y
-            amazon-linux-extras install postgresql11 -y
-            aws eks update-kubeconfig --name ${ClusterName} --region ${AWS::Region} --role-arn ${EC2InstanceRoleArn}
-            mkdir ~/efs-mount
-            sleep 120
-            sudo mount -t nfs4 -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport ${EksEfsFileSystem}.efs.${AWS::Region}.amazonaws.com:/ ~/efs-mount
-            git clone -b eks-gul/v2 https://github.com/ActiveLearningStudio/curriki-eks.git
-            unzip /curriki-eks/storage/storage.zip -d ~/efs-mount
-            sed -i 's/substitute-me-efs-id/${EksEfsFileSystem}/g' /curriki-eks/src/v2/yamls/efs-provisioner.yml
-            sed -i 's/substitute-me-efs-region/${AWS::Region}/g' /curriki-eks/src/v2/yamls/efs-provisioner.yml
-            sed -i 's/substitute-me-efs-dns-name/${EksEfsFileSystem}.efs.${AWS::Region}.amazonaws.com/g' /curriki-eks/src/v2/yamls/efs-provisioner.yml
-            cp /curriki-eks/envs/.env.client.example /curriki-eks/envs/.env.local
-            escaped=$(echo ${ReactAppPexelAPI} | sed 's%/%\\/%g')
-            sed "s/reactapppexelapi/$escaped/g" /curriki-eks/envs/.env.local  > /curriki-eks/envs/.env.local.new
-            mv /curriki-eks/envs/.env.local.new /curriki-eks/envs/.env.local
-            escaped=$(echo ${LaravelFrontEndUrl}/api/api | sed 's%/%\\/%g')
-            sed "s/reactappapiurl/$escaped/g" /curriki-eks/envs/.env.local  > /curriki-eks/envs/.env.local.new
-            mv /curriki-eks/envs/.env.local.new /curriki-eks/envs/.env.local
-            escaped=$(echo ${LaravelFrontEndUrl}/api | sed 's%/%\\/%g')
-            sed "s/reactappresourceurl/$escaped/g" /curriki-eks/envs/.env.local  > /curriki-eks/envs/.env.local.new
-            mv /curriki-eks/envs/.env.local.new /curriki-eks/envs/.env.local
-            escaped=$(echo ${ReactAppGoogleCaptcha} | sed 's%/%\\/%g')
-            sed "s/reactappgooglecaptcha/$escaped/g" /curriki-eks/envs/.env.local  > /curriki-eks/envs/.env.local.new
-            mv /curriki-eks/envs/.env.local.new /curriki-eks/envs/.env.local
-            escaped=$(echo ${ReactAppGoogleApiClientId} | sed 's%/%\\/%g')
-            sed "s/reactappgoogleapiclientid/$escaped/g" /curriki-eks/envs/.env.local  > /curriki-eks/envs/.env.local.new
-            mv /curriki-eks/envs/.env.local.new /curriki-eks/envs/.env.local
-            escaped=$(echo ${ReactAppHubspot} | sed 's%/%\\/%g')
-            sed "s/reactapphubspot/$escaped/g" /curriki-eks/envs/.env.local  > /curriki-eks/envs/.env.local.new
-            mv /curriki-eks/envs/.env.local.new /curriki-eks/envs/.env.local
-            escaped=$(echo ${ReactAppH5PKey} | sed 's%/%\\/%g')
-            sed "s/reactapph5pkey/$escaped/g" /curriki-eks/envs/.env.local  > /curriki-eks/envs/.env.local.new
-            mv /curriki-eks/envs/.env.local.new /curriki-eks/envs/.env.local
-            cp /curriki-eks/envs/.env.api.example /curriki-eks/envs/.env
-            escaped=$(echo ${LaravelFrontEndUrl}/api | sed 's%/%\\/%g')
-            sed "s/currikiappurl/$escaped/g" /curriki-eks/envs/.env  > /curriki-eks/envs/.env.new
-            mv /curriki-eks/envs/.env.new /curriki-eks/envs/.env
-            escaped=$(echo ${LaravelFrontEndUrl} | sed 's%/%\\/%g')
-            sed "s/currikifrontendurl/$escaped/g" /curriki-eks/envs/.env  > /curriki-eks/envs/.env.new
-            mv /curriki-eks/envs/.env.new /curriki-eks/envs/.env
-            aws --region ${AWS::Region} secretsmanager get-secret-value --secret-id ${RdsInstanceSecret} --query SecretString --output text | jq -r .password > /curriki-eks/envs/password
-            aws --region ${AWS::Region} secretsmanager get-secret-value --secret-id ${RdsInstanceSecret} --query SecretString --output text | jq -r .dbname > /curriki-eks/envs/dbname
-            aws --region ${AWS::Region} secretsmanager get-secret-value --secret-id ${RdsInstanceSecret} --query SecretString --output text | jq -r .port > /curriki-eks/envs/port
-            aws --region ${AWS::Region} secretsmanager get-secret-value --secret-id ${RdsInstanceSecret} --query SecretString --output text | jq -r .host > /curriki-eks/envs/host
-            aws --region ${AWS::Region} secretsmanager get-secret-value --secret-id ${RdsInstanceSecret} --query SecretString --output text | jq -r .username > /curriki-eks/envs/username
-            sed -i "s/currikidbhost/$(cat /curriki-eks/envs/host | sed 's%&%\\&%g')/g" /curriki-eks/envs/.env
-            sed -i "s/currikidbport/$(cat /curriki-eks/envs/port | sed 's%&%\\&%g')/g" /curriki-eks/envs/.env
-            sed -i "s/currikidbdatabase/$(cat /curriki-eks/envs/dbname | sed 's%&%\\&%g')/g" /curriki-eks/envs/.env
-            sed -i "s/currikidbusername/$(cat /curriki-eks/envs/username | sed 's%&%\\&%g')/g" /curriki-eks/envs/.env
-            sed -i "s/currikidbpass/$(cat /curriki-eks/envs/password | sed 's%&%\\&%g')/g" /curriki-eks/envs/.env
-            export PGPASSWORD="$(cat /curriki-eks/envs/password)"
-            psql -h $(cat /curriki-eks/envs/host) -U $(cat /curriki-eks/envs/username) -d $(cat /curriki-eks/envs/dbname) < /curriki-eks/db/studio-initial-db.sql
-            sudo kubectl create secret generic currikidev-api-secret --from-file=/curriki-eks/envs/.env
-            sudo kubectl create secret generic currikidev-client-secret --from-file=/curriki-eks/envs/.env.local
-            sudo kubectl apply -k "github.com/kubernetes-sigs/aws-efs-csi-driver/deploy/kubernetes/overlays/stable/?ref=master"
-            sudo kubectl apply -f /curriki-eks/src/v2/yamls/rbac.yml
-            sudo kubectl apply -f /curriki-eks/src/v2/yamls/efs-provisioner.yml
-            sudo kubectl apply -f /curriki-eks/src/v2/yamls/api.yaml
-            sudo kubectl apply -f /curriki-eks/src/v2/yamls/client.yaml
-            sed -i 's/update-eks-cluster-name/${ClusterName}/g' /curriki-eks/src/v2/yamls/es.yml
-            sudo kubectl apply -f /curriki-eks/src/v2/yamls/es.yml
-            sudo kubectl apply -f /curriki-eks/src/v2/yamls/es-svc.yml
-            sleep 60
-            sudo kubectl exec -i $(sudo kubectl get pods | grep elasticsearch-client | sed -n 1p | awk '{print $1}') -- bin/elasticsearch-users useradd ${ElasticSearchUser} -p ${ElasticSearchPassword} -r superuser
-            sed -i 's/update-eks-es-user/${ElasticSearchUser}/g' /curriki-eks/src/v2/yamls/kibana.yml
-            sed -i 's/update-eks-es-password/${ElasticSearchPassword}/g' /curriki-eks/src/v2/yamls/kibana.yml
-            sudo kubectl apply -f /curriki-eks/src/v2/yamls/kibana.yml
-            curl -L https://istio.io/downloadIstio | ISTIO_VERSION=1.7.3 TARGET_ARCH=x86_64 sh -
-            escaped=$(echo ${AcmCertArn} | sed 's%/%\\/%g')
-            sed "s/substitute-me-acm-cert-substitute-me/$escaped/g" /curriki-eks/src/v2/yamls/istio-install.yaml  > /curriki-eks/src/v2/yamls/istio-install.yaml.new
-            mv /curriki-eks/src/v2/yamls/istio-install.yaml.new /curriki-eks/src/v2/yamls/istio-install.yaml
-            sudo /istio-1.7.3/bin/istioctl install --set profile=demo -f /curriki-eks/src/v2/yamls/istio-install.yaml
-            sudo kubectl label namespace default istio-injection=enabled
-            sudo kubectl apply -f /curriki-eks/src/v2/yamls/istio.yaml
-            /opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource Ec2Instance --configsets Install --region ${AWS::Region}
+            #!/bin/bash -xe
+            yum update -y aws-cfn-bootstrap 
+            /opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource Ec2Instance --configsets app_deployment --region ${AWS::Region}
             /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource Ec2Instance --region ${AWS::Region}
 
   EksEfsFileSystem:
