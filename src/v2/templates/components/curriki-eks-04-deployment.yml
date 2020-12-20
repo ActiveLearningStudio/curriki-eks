@@ -174,7 +174,7 @@ Resources:
                   sleep 120
                   sudo mount -t nfs4 -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport ${EksEfsFileSystem}.efs.${AWS::Region}.amazonaws.com:/ ~/efs-mount
                   cd /
-                  git clone -b eks-gul/v2 https://github.com/ActiveLearningStudio/curriki-eks.git
+                  git clone -b develop https://github.com/ActiveLearningStudio/curriki-eks.git
                   unzip /curriki-eks/storage/storage.zip -d ~/efs-mount
               mode: '000700'
               owner: root
@@ -275,6 +275,8 @@ Resources:
                   sleep 60
                   sudo kubectl exec -i $(sudo kubectl get pods | grep elasticsearch-client | sed -n 1p | awk '{print $1}') -- bin/elasticsearch-users useradd ${ElasticSearchUser} -p ${ElasticSearchPassword} -r superuser
                   sudo kubectl apply -f /curriki-eks/src/v2/yamls/kibana.yml
+                  sudo kubectl apply -f redis-master.yaml
+                  sudo kubectl apply -f redis-slave.yaml
               mode: '000700'
               owner: root
               group: root

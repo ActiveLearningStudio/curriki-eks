@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis-master
+  labels:
+    app: redis
+spec:
+  selector:
+    matchLabels:
+      app: redis
+      role: master
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: redis
+        role: master
+    spec:
+      containers:
+      - name: master
+        image: redis:latest 
+        ports:
+        - containerPort: 6379
+        volumeMounts:
+        - name: currikidev-api-storage
+          mountPath: /data
+          readOnly: false
+      volumes:
+      - name: currikidev-api-storage
+        persistentVolumeClaim:
+          claimName: efs
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-master
+  labels:
+    app: redis
+    role: master
+    tier: backend
+spec:
+  ports:
+  - name: redis
+    port: 6379
+    targetPort: 6379
+  selector:
+    app: redis
+    role: master
