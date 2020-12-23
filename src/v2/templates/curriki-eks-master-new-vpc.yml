@@ -193,6 +193,10 @@ Parameters:
   ElasticSearchPassword:
     Type: String
     NoEcho: true
+  RedisPassword:
+    Type: String
+    NoEcho: true
+    Description: Password for Redis cache
 Resources:
   EksCluster:
     Type: AWS::CloudFormation::Stack
@@ -268,4 +272,5 @@ Resources:
         RdsInstanceSecret: !GetAtt DbStack.Outputs.MyRDSInstanceSecret
         ElasticSearchUser: !Ref ElasticSearchUser
         ElasticSearchPassword: !Ref ElasticSearchPassword
+        RedisPassword: !Ref RedisPassword
       TemplateURL: https://studio-eks.s3.amazonaws.com/src/v2/templates/components/curriki-eks-04-deployment.yml
