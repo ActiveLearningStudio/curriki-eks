@@ -74,6 +74,10 @@ Parameters:
   ElasticSearchPassword:
     Type: String
     NoEcho: true
+  RedisPassword:
+    Type: String
+    NoEcho: true
+    Description: Password for Redis cache
 Conditions:
   CreateTwoTargets:
     !Equals [ '2', !Ref NumberOfAZs ]
@@ -275,8 +279,8 @@ Resources:
                   sleep 60
                   sudo kubectl exec -i $(sudo kubectl get pods | grep elasticsearch-client | sed -n 1p | awk '{print $1}') -- bin/elasticsearch-users useradd ${ElasticSearchUser} -p ${ElasticSearchPassword} -r superuser
                   sudo kubectl apply -f /curriki-eks/src/v2/yamls/kibana.yml
-                  sudo kubectl apply -f /curriki-eks/src/v2/yamls/redis-master.yaml
-                  sudo kubectl apply -f /curriki-eks/src/v2/yamls/redis-slave.yaml
+                  kubectl create secret generic redis --from-literal="REDIS_PASS=${RedisPassword}"
+                  sudo kubectl apply -f /curriki-eks/src/v2/yamls/redis.yaml
               mode: '000700'
               owner: root
               group: root
