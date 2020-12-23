@@ -1,20 +1,20 @@
 ---
-  apiVersion: v1
-  kind: Service
-  metadata:
-    annotations:
-      app: api
-    labels:
-      io.kompose.service: currikidev-api
-    name: currikidev-api
-  spec:
-    type: ClusterIP
-    ports:
-    - name: "8000"
-      port: 8000
-      targetPort: 8000
-    selector:
-      io.kompose.service: currikidev-api
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    app: api
+  labels:
+    io.kompose.service: currikidev-api
+  name: currikidev-api
+spec:
+  type: ClusterIP
+  ports:
+  - name: "8000"
+    port: 8000
+    targetPort: 8000
+  selector:
+    io.kompose.service: currikidev-api
 
 ---
 apiVersion: apps/v1
@@ -40,29 +40,164 @@ spec:
         io.kompose.network/currikidev-laravel: "true"
         io.kompose.service: currikidev-api
     spec:
+      volumes:
+        - name: h5p-storage
+          persistentVolumeClaim:
+            claimName: h5p-shared-storage
+        # - name: currikidev-api-storage
+        #   persistentVolumeClaim:
+        #     claimName: efs
+        - name: currikidev-api-secret
+          secret:
+            secretName: currikidev-api-secret
+        - name: h5p-temp-fast-api-storage
+          emptyDir: {}
       containers:
-      - image: curriki/api:1.0.0
+      - name: curriki-api-fpm
+        # env:
+        #   - name: jaeger_service
+        #     value: jaeger-all-in-one-inmemory-agent:6831
+        # livenessProbe:
+        #   tcpSocket:
+        #     port: 9999
+        #   timeoutSeconds: 1
+        #   periodSeconds: 10
+        #   successThreshold: 1
+        #   failureThreshold: 3
+        image: quay.io/curriki/curriki-api-fpm:latest
+        resources: { }
+        ports:
+          - containerPort: 9999
+        # readinessProbe:
+        #   tcpSocket:
+        #     port: 9999
+        #   timeoutSeconds: 1
+        #   periodSeconds: 10
+        #   successThreshold: 1
+        #   failureThreshold: 3
+        volumeMounts:
+        - name: h5p-storage
+          mountPath: /var/www/html/storage
+        - name: currikidev-api-secret
+          mountPath: /var/www/html/.env
+          subPath: .env
+        - name: h5p-temp-fast-api-storage
+          mountPath: /var/www/html/storage/app/public/h5p/temp
+        # - name: curriki-api-env
+        #   mountPath: /var/www/html/.env
+        #   subPath: .env
+        #   - name: curriki-api-echo-server
+        #     mountPath: /var/www/html/laravel-echo-server.json
+        #     subPath: laravel-echo-server.json
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
         imagePullPolicy: Always
-        name: currikidev-api
-        envFrom:
-          - secretRef:
-              name: currikidev-api-secret
+      - name: curriki-api
+        # livenessProbe:
+        #   httpGet:
+        #     path: /
+        #     port: 8443
+        #     scheme: HTTPS
+        #   timeoutSeconds: 10
+        #   periodSeconds: 20
+        #   successThreshold: 1
+        #   failureThreshold: 3
+        image: quay.io/curriki/curriki-api:latest
+        resources: {}
+        # readinessProbe:
+        #   httpGet:
+        #     path: /
+        #     port: 8443
+        #     scheme: HTTPS
+        #   timeoutSeconds: 10
+        #   periodSeconds: 20
+        #   successThreshold: 1
+        #   failureThreshold: 3
+        volumeMounts:
+        - name: h5p-storage
+          mountPath: /var/www/html/storage
+        - name: currikidev-api-secret
+          mountPath: /var/www/html/.env
+          subPath: .env
+        - name: h5p-temp-fast-api-storage
+          mountPath: /var/www/html/storage/app/public/h5p/temp
+        # - name: curriki-api-env
+        #   mountPath: /var/www/html/.env
+        #   subPath: .env
+        # - name: curriki-api-echo-server
+        #   mountPath: /var/www/html/laravel-echo-server.json
+        #   subPath: laravel-echo-server.json
+        # - mountPath: /etc/ssl/certs/tls.crt
+        #   name: tls-crt
+        #   subPath: tls.crt
+        # - mountPath: /etc/ssl/certs/tls.key
+        #   name: tls-key
+        #   subPath: tls.key
+        # - image: curriki/api:1.0.0
+        #   imagePullPolicy: Always
+        #   name: currikidev-api
+        #   envFrom:
+        #     - secretRef:
+        #         name: currikidev-api-secret
         ports:
         - containerPort: 8000
-        volumeMounts:
-          - mountPath: /var/www/html/storage
-            name: currikidev-api-storage
-            readOnly: false
-          - mountPath: /var/www/html/env
-            name: "currikidev-api-secret"
-            readOnly: true
+        # volumeMounts:
+        #   - mountPath: /var/www/html/storage
+        #     name: currikidev-api-storage
+        #     readOnly: false
+        #   - mountPath: /var/www/html/env
+        #     name: "currikidev-api-secret"
+        #     readOnly: true
+        #   resources: {}
+      - name: laravel-echo-server
+        # readinessProbe:
+        #   httpGet:
+        #     path: /
+        #     port: 6001
+        #     scheme: HTTP
+        #   timeoutSeconds: 1
+        #   periodSeconds: 10
+        #   successThreshold: 1
+        #   failureThreshold: 3
+        image: quay.io/curriki/curriki-api:latest
         resources: {}
+        # livenessProbe:
+        #   httpGet:
+        #     path: /
+        #     port: 6001
+        #     scheme: HTTP
+        #   timeoutSeconds: 1
+        #   periodSeconds: 10
+        #   successThreshold: 1
+        #   failureThreshold: 3
+        command: [ "/bin/bash", "-c", "/usr/local/bin/api-laravel-echo-server.sh" ]
+        volumeMounts:
+          - name: h5p-storage
+            mountPath: /var/www/html/storage
+          - name: currikidev-api-secret
+            mountPath: /var/www/html/.env
+            subPath: .env
+        #   - name: curriki-api-echo-server
+        #     mountPath: /var/www/html/laravel-echo-server.json
+        #     subPath: laravel-echo-server.json
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        imagePullPolicy: Always
+      - name: artisan-queue-worker
+        image: quay.io/curriki/curriki-api:latest
+        resources: {}
+        command: ["/bin/sh", "-c", "/usr/local/bin/api-queue-worker.sh"]
+        volumeMounts:
+          - name: h5p-storage
+            mountPath: /var/www/html/storage
+          - name: currikidev-api-secret
+            mountPath: /var/www/html/.env
+            subPath: .env
+        #   - name: curriki-api-echo-server
+        #     mountPath: /var/www/html/laravel-echo-server.json
+        #     subPath: laravel-echo-server.json
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        imagePullPolicy: Always 
       restartPolicy: Always
       serviceAccountName: ""
-      volumes:
-        - name: currikidev-api-storage
-          persistentVolumeClaim:
-            claimName: efs
-        - name: "currikidev-api-secret"
-          secret:
-            secretName: "currikidev-api-secret"

@@ -69,12 +69,12 @@ provisioner: kubernetes.io/aws-efs
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: efs
+  name: h5p-shared-storage
   annotations:
     volume.beta.kubernetes.io/storage-class: "aws-efs"
 spec:
   capacity:
-    storage: 1Mi
+    storage: 5Gi
   volumeMode: Filesystem
   accessModes:
     - ReadWriteMany
@@ -94,7 +94,7 @@ spec:
 kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
-  name: efs
+  name: h5p-shared-storage
   annotations:
     volume.beta.kubernetes.io/storage-class: "aws-efs"
 spec:
@@ -102,5 +102,5 @@ spec:
     - ReadWriteMany
   resources:
     requests:
-      storage: 1Mi
+      storage: 5Gi
 ---

@@ -5,7 +5,7 @@ metadata:
     io.kompose.service: currikidev-client
   name: currikidev-client
 spec:
-  replicas: 3
+  replicas: 1
   selector:
     matchLabels:
       io.kompose.service: currikidev-client
@@ -18,21 +18,19 @@ spec:
         io.kompose.service: currikidev-client
     spec:
       containers:
-      - image: curriki/client:1.0.0
+      - image: quay.io/curriki/client:latest
         imagePullPolicy: Always
         name: currikidev-client
-        ports:
-        - containerPort: 3000
         stdin: true
         volumeMounts:
           - mountPath: /var/app/current/env
-            name: "currikidev-client-secret"
+            name: currikidev-client-secret
             readOnly: true
       restartPolicy: Always
       volumes:
-        - name: "currikidev-client-secret"
+        - name: currikidev-client-secret
           secret:
-            secretName: "currikidev-client-secret"
+            secretName: currikidev-client-secret
 
 
 ---
@@ -46,9 +44,9 @@ metadata:
 spec:
   type: ClusterIP
   ports:
-  - name: "3000"
-    port: 3000
-    targetPort: 3000
+  - name: "8080"
+    port: 8080
+    targetPort: 8080
   selector:
     io.kompose.service: currikidev-client
 
