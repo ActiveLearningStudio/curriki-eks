@@ -49,6 +49,7 @@ metadata:
     name: redis
     component: cache
 spec:
+  type: LoadBalancer
   ports:
   - name: redis
     port: 6379
