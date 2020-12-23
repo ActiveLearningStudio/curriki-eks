@@ -174,7 +174,7 @@ Resources:
                   sleep 120
                   sudo mount -t nfs4 -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport ${EksEfsFileSystem}.efs.${AWS::Region}.amazonaws.com:/ ~/efs-mount
                   cd /
-                  git clone -b eks-gul/v2 https://github.com/ActiveLearningStudio/curriki-eks.git
+                  git clone -b develop https://github.com/ActiveLearningStudio/curriki-eks.git
                   unzip /curriki-eks/storage/storage.zip -d ~/efs-mount
               mode: '000700'
               owner: root
@@ -286,6 +286,7 @@ Resources:
             "/tmp/configure_istio":
               content:
                 !Sub |
+                  cd /
                   curl -L https://istio.io/downloadIstio | ISTIO_VERSION=1.7.3 TARGET_ARCH=x86_64 sh -
                   sudo /istio-1.7.3/bin/istioctl install --set profile=demo -f /curriki-eks/src/v2/yamls/istio-install.yaml
                   sudo kubectl label namespace default istio-injection=enabled
