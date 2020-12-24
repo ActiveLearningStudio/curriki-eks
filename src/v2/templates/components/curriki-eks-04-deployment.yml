@@ -106,7 +106,7 @@ Resources:
           - config_update
           - configure_postgres
           - deploy_application
-          - configure_istio
+          # - configure_istio
         install_cfn:
           files:
             "/etc/cfn/cfn-hup.conf":
@@ -281,18 +281,6 @@ Resources:
                   sudo kubectl apply -f /curriki-eks/src/v2/yamls/kibana.yml
                   sudo kubectl create secret generic redis --from-literal="REDIS_PASS=${RedisPassword}"
                   sudo kubectl apply -f /curriki-eks/src/v2/yamls/redis.yaml
-              mode: '000700'
-              owner: root
-              group: root
-          commands:
-            01_deploy_application:
-              command: "/tmp/deploy_application"
-        configure_istio:
-          files:
-            "/tmp/configure_istio":
-              content:
-                !Sub |
-                  #!/bin/bash -xe
                   cd /
                   curl -L https://istio.io/downloadIstio | ISTIO_VERSION=1.7.3 TARGET_ARCH=x86_64 sh -
                   sudo /istio-1.7.3/bin/istioctl install --set profile=demo -f /curriki-eks/src/v2/yamls/istio-install.yaml
@@ -302,8 +290,25 @@ Resources:
               owner: root
               group: root
           commands:
-            01_configure_istio:
-              command: "/tmp/configure_istio"
+            01_deploy_application:
+              command: "/tmp/deploy_application"
+        # configure_istio:
+        #   files:
+        #     "/tmp/configure_istio":
+        #       content:
+        #         !Sub |
+        #           #!/bin/bash -xe
+        #           cd /
+        #           curl -L https://istio.io/downloadIstio | ISTIO_VERSION=1.7.3 TARGET_ARCH=x86_64 sh -
+        #           sudo /istio-1.7.3/bin/istioctl install --set profile=demo -f /curriki-eks/src/v2/yamls/istio-install.yaml
+        #           sudo kubectl label namespace default istio-injection=enabled
+        #           sudo kubectl apply -f /curriki-eks/src/v2/yamls/istio.yaml
+        #       mode: '000700'
+        #       owner: root
+        #       group: root
+        #   commands:
+        #     01_configure_istio:
+        #       command: "/tmp/configure_istio"
     CreationPolicy:
       ResourceSignal:
         Timeout: PT30M
