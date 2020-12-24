@@ -197,6 +197,11 @@ Parameters:
     Type: String
     NoEcho: true
     Description: Password for Redis cache
+  Route53RecordDNS:
+    Type: String
+    Default: k8s.currikistudio.org
+  HostedZoneID:
+    Type: String
 Resources:
   EksCluster:
     Type: AWS::CloudFormation::Stack
@@ -273,4 +278,6 @@ Resources:
         ElasticSearchUser: !Ref ElasticSearchUser
         ElasticSearchPassword: !Ref ElasticSearchPassword
         RedisPassword: !Ref RedisPassword
+        Route53RecordDNS: !Ref Route53RecordDNS
+        HostedZoneID: !Ref HostedZoneID
       TemplateURL: https://studio-eks.s3.amazonaws.com/src/v2/templates/components/curriki-eks-04-deployment.yml
