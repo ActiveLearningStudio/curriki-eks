@@ -112,7 +112,7 @@ spec:
           name: elasticsearch-data-config
       - name: currikidev-api-storage
         persistentVolumeClaim:
-          claimName: efs
+          claimName: h5p-shared-storage
       initContainers:
       - name: increase-vm-max-map
         image: busybox
@@ -179,7 +179,7 @@ spec:
               name: elasticsearch-master-config
           - name: currikidev-api-storage
             persistentVolumeClaim:
-              claimName: efs
+              claimName: h5p-shared-storage
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -235,7 +235,7 @@ spec:
               name: elasticsearch-client-config
           - name: currikidev-api-storage
             persistentVolumeClaim:
-              claimName: efs
+              claimName: h5p-shared-storage
       initContainers:
       - name: increase-vm-max-map
         image: busybox
