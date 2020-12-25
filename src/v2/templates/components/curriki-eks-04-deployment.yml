@@ -273,10 +273,12 @@ Resources:
           files:
             "/tmp/deploy_application":
               content:
+                # TODO - Substitute redis variables in secret/curriki-api-echo-server
                 !Sub |
                   #!/bin/bash -xe
                   sudo kubectl create secret generic currikidev-api-secret --from-file=/curriki-eks/envs/.env
                   sudo kubectl create secret generic currikidev-client-secret --from-file=/curriki-eks/envs/.env.local
+                  sudo kubectl create secret generic curriki-api-echo-server --from-file=/curriki-eks/envs/laravel-echo-server.json
                   sudo kubectl apply -k "github.com/kubernetes-sigs/aws-efs-csi-driver/deploy/kubernetes/overlays/stable/?ref=master"
                   sudo kubectl apply -f /curriki-eks/src/v2/yamls/rbac.yml
                   sudo kubectl apply -f /curriki-eks/src/v2/yamls/efs-provisioner.yml

@@ -44,9 +44,10 @@ spec:
         - name: h5p-storage
           persistentVolumeClaim:
             claimName: h5p-shared-storage
-        # - name: currikidev-api-storage
-        #   persistentVolumeClaim:
-        #     claimName: efs
+        - name: curriki-api-echo-server
+          secret:
+            defaultMode: 420
+            secretName: curriki-api-echo-server
         - name: currikidev-api-secret
           secret:
             secretName: currikidev-api-secret
@@ -86,9 +87,9 @@ spec:
         # - name: curriki-api-env
         #   mountPath: /var/www/html/.env
         #   subPath: .env
-        #   - name: curriki-api-echo-server
-        #     mountPath: /var/www/html/laravel-echo-server.json
-        #     subPath: laravel-echo-server.json
+        - name: curriki-api-echo-server
+          mountPath: /var/www/html/laravel-echo-server.json
+          subPath: laravel-echo-server.json
         terminationMessagePath: /dev/termination-log
         terminationMessagePolicy: File
         imagePullPolicy: Always
@@ -124,9 +125,9 @@ spec:
         # - name: curriki-api-env
         #   mountPath: /var/www/html/.env
         #   subPath: .env
-        # - name: curriki-api-echo-server
-        #   mountPath: /var/www/html/laravel-echo-server.json
-        #   subPath: laravel-echo-server.json
+        - name: curriki-api-echo-server
+          mountPath: /var/www/html/laravel-echo-server.json
+          subPath: laravel-echo-server.json
         # - mountPath: /etc/ssl/certs/tls.crt
         #   name: tls-crt
         #   subPath: tls.crt
@@ -177,9 +178,9 @@ spec:
           - name: currikidev-api-secret
             mountPath: /var/www/html/.env
             subPath: .env
-        #   - name: curriki-api-echo-server
-        #     mountPath: /var/www/html/laravel-echo-server.json
-        #     subPath: laravel-echo-server.json
+          - name: curriki-api-echo-server
+            mountPath: /var/www/html/laravel-echo-server.json
+            subPath: laravel-echo-server.json
         terminationMessagePath: /dev/termination-log
         terminationMessagePolicy: File
         imagePullPolicy: Always
@@ -193,9 +194,9 @@ spec:
           - name: currikidev-api-secret
             mountPath: /var/www/html/.env
             subPath: .env
-        #   - name: curriki-api-echo-server
-        #     mountPath: /var/www/html/laravel-echo-server.json
-        #     subPath: laravel-echo-server.json
+          - name: curriki-api-echo-server
+            mountPath: /var/www/html/laravel-echo-server.json
+            subPath: laravel-echo-server.json
         terminationMessagePath: /dev/termination-log
         terminationMessagePolicy: File
         imagePullPolicy: Always 
