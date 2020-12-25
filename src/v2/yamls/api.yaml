@@ -32,7 +32,7 @@ spec:
     port: 6001
     targetPort: 6001
   selector:
-    io.kompose.service: currikidev-socket
+    io.kompose.service: currikidev-api
 
 ---
 apiVersion: apps/v1
