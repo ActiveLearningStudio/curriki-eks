@@ -41,12 +41,6 @@ spec:
         host: currikidev-api
   - match:
     - uri:
-        prefix: /
-    route:
-    - destination:
-        host: currikidev-client
-  - match:
-    - uri:
         prefix: /socket.io/
     route:
     - destination:
@@ -57,4 +51,11 @@ spec:
     route:
     - destination:
         host: currikidev-admin
+  - match:
+    - uri:
+        prefix: /
+    route:
+    - destination:
+        host: currikidev-client
+  
         
