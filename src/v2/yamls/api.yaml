@@ -17,6 +17,24 @@ spec:
     io.kompose.service: currikidev-api
 
 ---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    app: api
+  labels:
+    io.kompose.service: currikidev-socket
+  name: currikidev-socket
+spec:
+  type: ClusterIP
+  ports:
+  - name: "6001"
+    port: 6001
+    targetPort: 6001
+  selector:
+    io.kompose.service: currikidev-socket
+
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
