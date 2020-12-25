@@ -262,6 +262,7 @@ Resources:
                   sed -i "s/currikidbpass/$(cat /curriki-eks/envs/password | sed 's%&%\\&%g')/g" /curriki-eks/envs/.env
                   export PGPASSWORD="$(cat /curriki-eks/envs/password)"
                   psql -h $(cat /curriki-eks/envs/host) -U $(cat /curriki-eks/envs/username) -d $(cat /curriki-eks/envs/dbname) -w < /curriki-eks/db/studio-initial-db.sql
+                  sudo kubectl create secret generic curriki-postgres-credentials --from-file=host=/curriki-eks/envs/host  --from-file=username=/curriki-eks/envs/username  --from-file=dbname=/curriki-eks/envs/dbname  --from-file=password=/curriki-eks/envs/password
               mode: '000700'
               owner: root
               group: root
@@ -279,15 +280,18 @@ Resources:
                   sudo kubectl apply -k "github.com/kubernetes-sigs/aws-efs-csi-driver/deploy/kubernetes/overlays/stable/?ref=master"
                   sudo kubectl apply -f /curriki-eks/src/v2/yamls/rbac.yml
                   sudo kubectl apply -f /curriki-eks/src/v2/yamls/efs-provisioner.yml
-                  sudo kubectl apply -f /curriki-eks/src/v2/yamls/api.yaml
-                  sudo kubectl apply -f /curriki-eks/src/v2/yamls/client.yaml
                   sudo kubectl apply -f /curriki-eks/src/v2/yamls/es.yml
                   sudo kubectl apply -f /curriki-eks/src/v2/yamls/es-svc.yml
                   sleep 60
-                  sudo kubectl exec -i $(sudo kubectl get pods | grep elasticsearch-client | sed -n 1p | awk '{print $1}') -- bin/elasticsearch-users useradd ${ElasticSearchUser} -p ${ElasticSearchPassword} -r superuser
-                  sudo kubectl apply -f /curriki-eks/src/v2/yamls/kibana.yml
                   sudo kubectl create secret generic redis --from-literal="REDIS_PASS=${RedisPassword}"
                   sudo kubectl apply -f /curriki-eks/src/v2/yamls/redis.yaml
+
+                  sudo kubectl exec -i $(sudo kubectl get pods | grep elasticsearch-client | sed -n 1p | awk '{print $1}') -- bin/elasticsearch-users useradd ${ElasticSearchUser} -p ${ElasticSearchPassword} -r superuser
+                  sudo kubectl apply -f /curriki-eks/src/v2/yamls/kibana.yml
+                  sudo kubectl apply -f /curriki-eks/src/v2/yamls/api.yaml
+                  sudo kubectl apply -f /curriki-eks/src/v2/yamls/client.yaml
+                  sudo kubectl apply -f /curriki-eks/src/v2/yamls/api-es-index-load-job.yaml
+                  
               mode: '000700'
               owner: root
               group: root

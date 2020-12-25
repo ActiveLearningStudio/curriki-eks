@@ -1,0 +1,58 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: api-es-index-load
+spec:
+  template:
+    spec:
+      volumes:
+        - name: h5p-storage
+          persistentVolumeClaim:
+            claimName: h5p-shared-storage
+        - name: currikidev-api-secret
+          secret:
+            defaultMode: 420
+            secretName: currikidev-api-secret
+
+      # initContainers:
+      # - name: wait-for-es
+      #   image: gcr.io/google-containers/busybox:latest
+      #   command: ['sh', '-c', "until nslookup my-escluster-es-default.$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace).svc.cluster.local; do echo waiting for es service service; sleep 3; done"]
+      # - name: wait-for-database
+      #   image: gcr.io/google-containers/busybox:latest
+      #   command: ['sh', '-c', "until nslookup curriki-postgresql.$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace).svc.cluster.local; do echo waiting for curriki-postgres service; sleep 3; done"]
+      containers:
+      - name: load-es-index
+        image: quay.io/curriki/curriki-es-index-load:latest
+        imagePullPolicy: Always
+        command: [ "./load-index.sh" ]
+        env:
+          - name: PGPASSWORD
+            valueFrom:
+              secretKeyRef:
+                key: password
+                name: curriki-postgres-credentials
+          - name: USERNAME
+            valueFrom:
+              secretKeyRef:
+                key: username
+                name: curriki-postgres-credentials
+          - name: DB_NAME
+            valueFrom:
+              secretKeyRef:
+                key: dbname
+                name: curriki-postgres-credentials
+          - name: DB_HOST
+            valueFrom:
+              secretKeyRef:
+                key: host
+                name: curriki-postgres-credentials
+        volumeMounts:
+          - name: h5p-storage
+            mountPath: /var/www/html/storage
+          - name: currikidev-api-secret
+            mountPath: /var/www/html/.env
+            subPath: .env
+
+
+      restartPolicy: Never
