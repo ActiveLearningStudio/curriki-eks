@@ -39,7 +39,7 @@ spec:
       volumes:
       - name: currikidev-api-storage
         persistentVolumeClaim:
-          claimName: efs
+          claimName: h5p-shared-storage
 ---
 apiVersion: v1
 kind: Service
