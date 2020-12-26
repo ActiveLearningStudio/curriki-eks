@@ -14,10 +14,10 @@ spec:
             defaultMode: 420
             secretName: currikidev-api-secret
 
-      # initContainers:
-      # - name: wait-for-es
-      #   image: gcr.io/google-containers/busybox:latest
-      #   command: ['sh', '-c', "until nslookup my-escluster-es-default.$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace).svc.cluster.local; do echo waiting for es service service; sleep 3; done"]
+      initContainers:
+      - name: wait-for-es
+        image: gcr.io/google-containers/busybox:latest
+        command: ['sh', '-c', "until nslookup elasticsearch-master.$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace).svc.cluster.local; do echo waiting for es service service; sleep 3; done"]
       # - name: wait-for-database
       #   image: gcr.io/google-containers/busybox:latest
       #   command: ['sh', '-c', "until nslookup curriki-postgresql.$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace).svc.cluster.local; do echo waiting for curriki-postgres service; sleep 3; done"]
