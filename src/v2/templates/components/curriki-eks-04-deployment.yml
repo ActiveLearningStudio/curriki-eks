@@ -110,10 +110,11 @@ Resources:
           - efs_mount
           - config_update
           - configure_postgres
+          - env_updation
           - deploy_application
           - configure_istio
           - route53_record
-          - env_updation
+          
         install_cfn:
           files:
             "/etc/cfn/cfn-hup.conf":
@@ -284,10 +285,10 @@ Resources:
                   sudo kubectl apply -f /curriki-eks/src/v2/yamls/efs-provisioner.yml
                   sudo kubectl apply -f /curriki-eks/src/v2/yamls/es.yml
                   sudo kubectl apply -f /curriki-eks/src/v2/yamls/es-svc.yml
-                  sleep 60
+                  
                   sudo kubectl create secret generic redis --from-literal="REDIS_PASS=${RedisPassword}"
                   sudo kubectl apply -f /curriki-eks/src/v2/yamls/redis.yaml
-
+                  sleep 60
                   sudo kubectl exec -i $(sudo kubectl get pods | grep elasticsearch-client | sed -n 1p | awk '{print $1}') -- bin/elasticsearch-users useradd ${ElasticSearchUser} -p ${ElasticSearchPassword} -r superuser
                   sudo kubectl apply -f /curriki-eks/src/v2/yamls/kibana.yml
                   sudo kubectl apply -f /curriki-eks/src/v2/yamls/api.yaml
