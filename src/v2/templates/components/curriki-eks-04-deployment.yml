@@ -361,6 +361,7 @@ Resources:
                   sed -i "s/REDIS_HOST=/REDIS_HOST=$REDIS_HOST/g" /curriki-eks/envs/.env
                   sed -i "s/REDIS_PASSWORD=/REDIS_PASSWORD=${RedisPassword}/g" /curriki-eks/envs/.env
                   sed -i "s/REDIS_PORT=/REDIS_PORT=6379/g" /curriki-eks/envs/.env
+                  while [ -z $(sudo kubectl get svc | grep elasticsearch-logging-external | sed -n 1p | awk '{print $4}') ]; do echo waiting for elastic search; done
                   ELASTIC_HOST=$(sudo kubectl get svc | grep elasticsearch-logging-external | sed -n 1p | awk '{print $4}')
                   sed -i "s/ELASTIC_HOST=/ELASTIC_HOST=$ELASTIC_HOST/g" /curriki-eks/envs/.env
                   sed -i "s/ELASTIC_USER=/ELASTIC_USER=${ElasticSearchUser}/g" /curriki-eks/envs/.env
