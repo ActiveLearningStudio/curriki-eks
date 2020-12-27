@@ -47,10 +47,6 @@ Parameters:
   ReactAppPexelAPI:
     Type: String
     Description: Pexel API key
-  ReactAppResourceUrl:
-    Type: String
-    Description: React App Api Url
-    Default: https://k8s.currikistudio.org/api
   ReactAppGoogleCaptcha:
     Type: String
     Description: React App Google Captcha
@@ -110,6 +106,7 @@ Resources:
           - efs_mount
           - config_update
           - configure_postgres
+          - deploy_elastic_redis
           - env_updation
           - deploy_application
           - configure_istio
@@ -270,6 +267,27 @@ Resources:
           commands:
             01_configure_postgres:
               command: "/tmp/configure_postgres"
+        deploy_elastic_redis:
+          files:
+            "/tmp/deploy_elastic_redis":
+              content:
+                !Sub |
+                  #!/bin/bash -xe
+                  sudo kubectl apply -f /curriki-eks/src/v2/yamls/rbac.yml
+                  sudo kubectl apply -f /curriki-eks/src/v2/yamls/efs-provisioner.yml
+                  sudo kubectl apply -f /curriki-eks/src/v2/yamls/es.yml
+                  sudo kubectl apply -f /curriki-eks/src/v2/yamls/es-svc.yml
+                  sudo kubectl create secret generic redis --from-literal="REDIS_PASS=${RedisPassword}"
+                  sudo kubectl apply -f /curriki-eks/src/v2/yamls/redis.yaml
+                  sleep 60
+                  sudo kubectl exec -i $(sudo kubectl get pods | grep elasticsearch-client | sed -n 1p | awk '{print $1}') -- bin/elasticsearch-users useradd ${ElasticSearchUser} -p ${ElasticSearchPassword} -r superuser
+                  sudo kubectl apply -f /curriki-eks/src/v2/yamls/kibana.yml
+              mode: '000700'
+              owner: root
+              group: root
+          commands:
+            01_deploy_elastic_redis:
+              command: "/tmp/deploy_elastic_redis"
         deploy_application:
           files:
             "/tmp/deploy_application":
@@ -281,16 +299,6 @@ Resources:
                   sudo kubectl create secret generic currikidev-client-secret --from-file=/curriki-eks/envs/.env.local
                   sudo kubectl create secret generic curriki-api-echo-server --from-file=/curriki-eks/envs/laravel-echo-server.json
                   sudo kubectl apply -k "github.com/kubernetes-sigs/aws-efs-csi-driver/deploy/kubernetes/overlays/stable/?ref=master"
-                  sudo kubectl apply -f /curriki-eks/src/v2/yamls/rbac.yml
-                  sudo kubectl apply -f /curriki-eks/src/v2/yamls/efs-provisioner.yml
-                  sudo kubectl apply -f /curriki-eks/src/v2/yamls/es.yml
-                  sudo kubectl apply -f /curriki-eks/src/v2/yamls/es-svc.yml
-                  
-                  sudo kubectl create secret generic redis --from-literal="REDIS_PASS=${RedisPassword}"
-                  sudo kubectl apply -f /curriki-eks/src/v2/yamls/redis.yaml
-                  sleep 60
-                  sudo kubectl exec -i $(sudo kubectl get pods | grep elasticsearch-client | sed -n 1p | awk '{print $1}') -- bin/elasticsearch-users useradd ${ElasticSearchUser} -p ${ElasticSearchPassword} -r superuser
-                  sudo kubectl apply -f /curriki-eks/src/v2/yamls/kibana.yml
                   sudo kubectl apply -f /curriki-eks/src/v2/yamls/api.yaml
                   sudo kubectl apply -f /curriki-eks/src/v2/yamls/client.yaml
                   sudo kubectl apply -f /curriki-eks/src/v2/yamls/api-es-index-load-job.yaml

@@ -245,6 +245,7 @@ Resources:
       TimeoutInMinutes: 60
       Parameters:
         MyVPC: !GetAtt EksCluster.Outputs.VPC
+        VpcCidrBlock: !Ref VpcCidrBlock
         PrivateSubnets: !GetAtt EksCluster.Outputs.SubnetsPrivate
         DatabaseInstanceType: !Ref DatabaseInstanceType
   EksDeployment:
