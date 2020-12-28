@@ -253,6 +253,8 @@ Resources:
                   aws --region ${AWS::Region} secretsmanager get-secret-value --secret-id ${RdsInstanceSecret} --query SecretString --output text | jq -r .port > /curriki-eks/envs/port
                   aws --region ${AWS::Region} secretsmanager get-secret-value --secret-id ${RdsInstanceSecret} --query SecretString --output text | jq -r .host > /curriki-eks/envs/host
                   aws --region ${AWS::Region} secretsmanager get-secret-value --secret-id ${RdsInstanceSecret} --query SecretString --output text | jq -r .username > /curriki-eks/envs/username
+                  echo $(tr -dc A-Za-z0-9 </dev/urandom | head -c 32 ; echo '' ) > /curriki-eks/envs/appkey
+                  sed -i "s/currikiappkey/$(cat /curriki-eks/envs/appkey)/g" /curriki-eks/envs/.env
                   sed -i "s/currikidbhost/$(cat /curriki-eks/envs/host | sed 's%&%\\&%g')/g" /curriki-eks/envs/.env
                   sed -i "s/currikidbport/$(cat /curriki-eks/envs/port | sed 's%&%\\&%g')/g" /curriki-eks/envs/.env
                   sed -i "s/currikidbdatabase/$(cat /curriki-eks/envs/dbname | sed 's%&%\\&%g')/g" /curriki-eks/envs/.env
