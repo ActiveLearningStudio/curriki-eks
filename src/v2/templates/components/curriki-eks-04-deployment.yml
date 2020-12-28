@@ -379,6 +379,9 @@ Resources:
                   sed -i "s+ELASTIC_MIGRATIONS_DIRECTORY=+ELASTIC_MIGRATIONS_DIRECTORY=elastic/migrations+g" /curriki-eks/envs/.env 
                   sed -i "s/SCOUT_DRIVER=null/SCOUT_DRIVER=elastic/g" /curriki-eks/envs/.env
                   sed -i "s/QUEUE_CONNECTION=sync/QUEUE_CONNECTION=database/g" /curriki-eks/envs/.env
+                  sed -i "s/substitute-redis-port/6379/g" /curriki-eks/envs/laravel-echo-server.json
+                  sed -i "s/substitute-redis-host/$REDIS_HOST/g" /curriki-eks/envs/laravel-echo-server.json
+                  sed -i "s/substitute-redis-password/${RedisPassword}/g" /curriki-eks/envs/laravel-echo-server.json
               mode: '000700'
               owner: root
               group: root
