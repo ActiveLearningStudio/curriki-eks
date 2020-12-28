@@ -218,6 +218,8 @@ Resources:
         PrivateSubnetCidrBlockB: !Ref PrivateSubnetCidrBlockB
         PrivateSubnetCidrBlockC: !Ref PrivateSubnetCidrBlockC
         PrivateSubnetCidrBlockD: !Ref PrivateSubnetCidrBlockD
+        HostedZoneID: !Ref HostedZoneID
+        Route53RecordDNS: !Ref Route53RecordDNS
         AvailabilityZones: 
           !Join
             - ','

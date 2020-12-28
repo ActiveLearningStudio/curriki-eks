@@ -597,6 +597,14 @@ Resources:
       Tags:
       - Key: Name
         Value: !Sub ${AWS::StackName}-EksDeploymentSG
+  Certificate:
+    Type: AWS::CertificateManager::Certificate
+    Properties:
+      DomainName: !Ref Route53RecordDNS
+      DomainValidationOptions: 
+        - DomainName: !Ref Route53RecordDNS
+          HostedZoneId: !Ref HostedZoneID
+      ValidationMethod: DNS
 Outputs:
   ARN:
     Export:
