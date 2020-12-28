@@ -268,7 +268,7 @@ Resources:
             - ','
             - !Ref AvailabilityZones
         NumberOfAZs: !Ref NumberOfAZs
-        AcmCertArn: !Ref EksCluster.Outputs.AcmCertArn
+        AcmCertArn: !GetAtt EksCluster.Outputs.AcmCertArn
         VpcCidrBlock: !Ref VpcCidrBlock
         Ec2SecurityGroupId: !GetAtt EksCluster.Outputs.Ec2SecurityGroupId
         LaravelFrontEndUrl: !Ref LaravelFrontEndUrl
