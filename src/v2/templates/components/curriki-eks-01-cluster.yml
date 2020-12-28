@@ -679,3 +679,5 @@ Outputs:
         Fn::Sub: "${AWS::StackName}::VPC"
     Value:
       Ref: VPC
+  AcmCertArn:
+    Value: !Ref Certificate

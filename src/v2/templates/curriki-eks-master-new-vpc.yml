@@ -185,9 +185,9 @@ Parameters:
       - db.r4.8xlarge
       - db.r4.16xlarge
       - db.t3.xlarge
-  AcmCertArn:
-    Type: String
-    Description: Arn
+  # AcmCertArn:
+  #   Type: String
+  #   Description: Arn
   ElasticSearchUser:
     Type: String
   ElasticSearchPassword:
@@ -268,7 +268,7 @@ Resources:
             - ','
             - !Ref AvailabilityZones
         NumberOfAZs: !Ref NumberOfAZs
-        AcmCertArn: !Ref AcmCertArn
+        AcmCertArn: !Ref EksCluster.Outputs.AcmCertArn
         VpcCidrBlock: !Ref VpcCidrBlock
         Ec2SecurityGroupId: !GetAtt EksCluster.Outputs.Ec2SecurityGroupId
         LaravelFrontEndUrl: !Ref LaravelFrontEndUrl
