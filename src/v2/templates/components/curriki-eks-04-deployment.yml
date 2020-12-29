@@ -238,7 +238,6 @@ Resources:
                   sed -i 's/update-eks-cluster-name/${ClusterName}/g' /curriki-eks/src/v2/yamls/es.yml
                   sed -i 's/update-eks-es-user/${ElasticSearchUser}/g' /curriki-eks/src/v2/yamls/kibana.yml
                   sed -i 's/update-eks-es-password/${ElasticSearchPassword}/g' /curriki-eks/src/v2/yamls/kibana.yml
-                  escaped=$(echo ${AcmCertArn} | sed 's%/%\\/%g')
 
                   escaped=$(echo ${LaravelFrontEndUrl} | sed 's%/%\\/%g')
                   sed "s/substitute-frontend-url/$escaped/g" /curriki-eks/envs/.env.admin  > /curriki-eks/envs/.env.admin.new
@@ -246,6 +245,7 @@ Resources:
                   escaped=$(echo ${AdminUrl} | sed 's%/%\\/%g')
                   sed "s/substitute-admin-url/$escaped/g" /curriki-eks/envs/.env.admin  > /curriki-eks/envs/.env.admin.new
                   mv /curriki-eks/envs/.env.admin.new /curriki-eks/envs/.env.admin
+                  escaped=$(echo ${AcmCertArn} | sed 's%/%\\/%g')
                   sed "s/substitute-me-acm-cert-substitute-me/$escaped/g" /curriki-eks/src/v2/yamls/istio-install.yaml  > /curriki-eks/src/v2/yamls/istio-install.yaml.new
                   mv /curriki-eks/src/v2/yamls/istio-install.yaml.new /curriki-eks/src/v2/yamls/istio-install.yaml
                   sed "s/substitute-me-acm-cert-substitute-me/$escaped/g" /curriki-eks/src/v2/yamls/admin.yaml  > /curriki-eks/src/v2/yamls/admin.yaml.new

@@ -287,4 +287,5 @@ Resources:
         Route53RecordDNS: !Ref Route53RecordDNS
         HostedZoneID: !Ref HostedZoneID
         AdminUrl: !Ref AdminUrl
+        DomainName: !Ref DomainName
       TemplateURL: https://studio-eks.s3.amazonaws.com/src/v2/templates/components/curriki-eks-04-deployment.yml
