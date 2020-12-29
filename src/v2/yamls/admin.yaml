@@ -12,7 +12,7 @@ spec:
   ports:
   - name: http
     port: 80
-    targetPort: 5601
+    targetPort: 6000
     protocol: TCP
   selector:
     io.kompose.service: currikidev-admin
