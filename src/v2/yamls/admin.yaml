@@ -42,19 +42,19 @@ spec:
         io.kompose.service: currikidev-admin
     spec:
       volumes:
-        - name: admin-storage
-          emptyDir: {}
-          # - name: curriki-admin-env
-          #   configMap:
-          #     name: curriki-admin
-          #     defaultMode: 420
+      - name: admin-storage
+        emptyDir: {}
+        # - name: curriki-admin-env
+        #   configMap:
+        #     name: curriki-admin
+        #     defaultMode: 420
       initContainers:
-        - name: init-container
-          image: curriki/admin:latest
-          command: [ "/bin/bash", "-c", "cd /var/www/html/storage && mkdir -p framework/views && mkdir -p framework/sessions && mkdir -p framework/cache/data && mkdir -p framework/testing && mkdir -p logs && mkdir -p app/public" ]
-          volumeMounts:
-            - mountPath: /var/www/html/storage
-              name: admin-storage
+      - name: init-container
+        image: quay.io/curriki/curriki-admin:latest
+        command: [ "/bin/bash", "-c", "cd /var/www/html/storage && mkdir -p framework/views && mkdir -p framework/sessions && mkdir -p framework/cache/data && mkdir -p framework/testing && mkdir -p logs && mkdir -p app/public" ]
+        volumeMounts:
+          - mountPath: /var/www/html/storage
+            name: admin-storage
       containers:
       - name: curriki-admin
         # env:
@@ -67,7 +67,7 @@ spec:
         #   periodSeconds: 10
         #   successThreshold: 1
         #   failureThreshold: 3
-        image: curriki/admin:latest #quay.io/curriki/curriki-admin:latest
+        image: quay.io/curriki/curriki-admin:latest
         resources: { }
         ports:
           - containerPort: 6000
