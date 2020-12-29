@@ -336,7 +336,6 @@ Resources:
                   cd /
                   curl -L https://istio.io/downloadIstio | ISTIO_VERSION=1.7.3 TARGET_ARCH=x86_64 sh -
                   sudo /istio-1.7.3/bin/istioctl install --set profile=demo -f /curriki-eks/src/v2/yamls/istio-install.yaml
-                  sudo kubectl label namespace default istio-injection=enabled
                   sudo kubectl apply -f /curriki-eks/src/v2/yamls/istio.yaml
               mode: '000700'
               owner: root
