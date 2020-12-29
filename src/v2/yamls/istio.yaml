@@ -56,6 +56,21 @@ spec:
         prefix: /
     route:
     - destination:
-        host: currikidev-client
-  
-        
+        host: currikidev-client  
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: currikiadmin
+spec:
+  hosts:
+  - "cfadmin.currikistudio.org"
+  gateways:
+  - curriki-gateway
+  http:
+  - match:
+    - uri:
+        prefix: /
+    route:
+    - destination:
+        host: currikidev-admin
