@@ -48,7 +48,7 @@ spec:
           configMap:
             name: curriki-admin
             defaultMode: 420
-	  initContainers:
+	    initContainers:
         - name: init-container
           image: ' '
           command: [ "/bin/bash", "-c", "cd /var/www/html/storage && mkdir -p framework/views && mkdir -p framework/sessions && mkdir -p framework/cache/data && mkdir -p framework/testing && mkdir -p logs && mkdir -p app/public" ]
