@@ -44,13 +44,13 @@ spec:
       volumes:
         - name: admin-storage
           emptyDir: {}
-        - name: curriki-admin-env
-          configMap:
-            name: curriki-admin
-            defaultMode: 420
-	    initContainers:
+          # - name: curriki-admin-env
+          #   configMap:
+          #     name: curriki-admin
+          #     defaultMode: 420
+      initContainers:
         - name: init-container
-          image: ' '
+          image: curriki/admin:latest
           command: [ "/bin/bash", "-c", "cd /var/www/html/storage && mkdir -p framework/views && mkdir -p framework/sessions && mkdir -p framework/cache/data && mkdir -p framework/testing && mkdir -p logs && mkdir -p app/public" ]
           volumeMounts:
             - mountPath: /var/www/html/storage
@@ -79,11 +79,11 @@ spec:
         #   successThreshold: 1
         #   failureThreshold: 3
         volumeMounts:
-			- name: admin-storage
-			  mountPath: /var/www/html/storage
-			- name: curriki-admin-env
-			  mountPath: /var/www/html/.env
-			  subPath: .env
+        - name: admin-storage
+          mountPath: /var/www/html/storage
+        # - name: curriki-admin-env
+        #   mountPath: /var/www/html/.env
+        #   subPath: .env
         terminationMessagePath: /dev/termination-log
         terminationMessagePolicy: File
         imagePullPolicy: Always
