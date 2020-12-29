@@ -62,8 +62,8 @@ spec:
         image: quay.io/curriki/curriki-admin:latest
         command: [ "/bin/bash", "-c", "cd /var/www/html/storage && mkdir -p framework/views && mkdir -p framework/sessions && mkdir -p framework/cache/data && mkdir -p framework/testing && mkdir -p logs && mkdir -p app/public && chmod 777 -R /var/www/html/storage" ]
         volumeMounts:
-        - mountPath: /var/www/html/storage
-          name: admin-storage
+        - name: admin-storage
+          mountPath: /var/www/html/storage
         - name: curriki-admin-env
           mountPath: /var/www/html/.env
           subPath: .env
