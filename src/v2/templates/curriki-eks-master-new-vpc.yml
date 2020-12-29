@@ -185,9 +185,6 @@ Parameters:
       - db.r4.8xlarge
       - db.r4.16xlarge
       - db.t3.xlarge
-  # AcmCertArn:
-  #   Type: String
-  #   Description: Arn
   ElasticSearchUser:
     Type: String
   ElasticSearchPassword:
@@ -202,6 +199,12 @@ Parameters:
     Default: k8s.currikistudio.org
   HostedZoneID:
     Type: String
+  AdminUrl:
+    Type: String
+    Default: admin-studio.currikistudio.org
+  DomainName:
+    Type: String
+    Default: currikistudio.org
 Resources:
   EksCluster:
     Type: AWS::CloudFormation::Stack
@@ -220,6 +223,7 @@ Resources:
         PrivateSubnetCidrBlockD: !Ref PrivateSubnetCidrBlockD
         HostedZoneID: !Ref HostedZoneID
         Route53RecordDNS: !Ref Route53RecordDNS
+        DomainName: !Ref DomainName
         AvailabilityZones: 
           !Join
             - ','
@@ -283,4 +287,5 @@ Resources:
         RedisPassword: !Ref RedisPassword
         Route53RecordDNS: !Ref Route53RecordDNS
         HostedZoneID: !Ref HostedZoneID
+        AdminUrl: !Ref AdminUrl
       TemplateURL: https://studio-eks.s3.amazonaws.com/src/v2/templates/components/curriki-eks-04-deployment.yml

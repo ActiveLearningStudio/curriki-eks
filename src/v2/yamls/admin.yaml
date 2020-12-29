@@ -4,6 +4,12 @@ kind: Service
 metadata:
   annotations:
     app: admin
+    # Note that the backend talks over HTTP.
+    service.beta.kubernetes.io/aws-load-balancer-backend-protocol: http
+    # TODO: Fill in with the ARN of your certificate.
+    service.beta.kubernetes.io/aws-load-balancer-ssl-cert: substitute-me-acm-cert-substitute-me
+    # Only run SSL on the port named "https" below.
+    service.beta.kubernetes.io/aws-load-balancer-ssl-ports: "https"
   labels:
     io.kompose.service: currikidev-admin
   name: currikidev-admin
@@ -14,6 +20,9 @@ spec:
     port: 80
     targetPort: 6000
     protocol: TCP
+  - name: https
+    port: 443
+    targetPort: 6000
   selector:
     io.kompose.service: currikidev-admin
 
@@ -44,17 +53,20 @@ spec:
       volumes:
       - name: admin-storage
         emptyDir: {}
-        # - name: curriki-admin-env
-        #   configMap:
-        #     name: curriki-admin
-        #     defaultMode: 420
+      - name: curriki-admin-env
+        secret:
+          defaultMode: 420
+          secretName: curriki-admin-env
       initContainers:
       - name: init-container
         image: quay.io/curriki/curriki-admin:latest
-        command: [ "/bin/bash", "-c", "cd /var/www/html/storage && mkdir -p framework/views && mkdir -p framework/sessions && mkdir -p framework/cache/data && mkdir -p framework/testing && mkdir -p logs && mkdir -p app/public" ]
+        command: [ "/bin/bash", "-c", "cd /var/www/html/storage && mkdir -p framework/views && mkdir -p framework/sessions && mkdir -p framework/cache/data && mkdir -p framework/testing && mkdir -p logs && mkdir -p app/public && chmod 777 -R /var/www/html/storage" ]
         volumeMounts:
-          - mountPath: /var/www/html/storage
-            name: admin-storage
+        - mountPath: /var/www/html/storage
+          name: admin-storage
+        - name: curriki-admin-env
+          mountPath: /var/www/html/.env
+          subPath: .env
       containers:
       - name: curriki-admin
         # env:
@@ -81,9 +93,9 @@ spec:
         volumeMounts:
         - name: admin-storage
           mountPath: /var/www/html/storage
-        # - name: curriki-admin-env
-        #   mountPath: /var/www/html/.env
-        #   subPath: .env
+        - name: curriki-admin-env
+          mountPath: /var/www/html/.env
+          subPath: .env
         terminationMessagePath: /dev/termination-log
         terminationMessagePolicy: File
         imagePullPolicy: Always

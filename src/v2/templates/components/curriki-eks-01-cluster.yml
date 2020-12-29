@@ -63,7 +63,7 @@ Parameters:
   PrivateSubnetCidrBlockD:
     Type: String
     Description: CIDR Block for Private Subnet
-  Route53RecordDNS:
+  DomainName:
     Type: String
   HostedZoneID:
     Type: String
@@ -604,9 +604,13 @@ Resources:
   Certificate:
     Type: AWS::CertificateManager::Certificate
     Properties:
-      DomainName: !Ref Route53RecordDNS
+      DomainName: 
+        !Join
+        - ''
+        - - '*.'
+          - !Ref DomainName
       DomainValidationOptions: 
-        - DomainName: !Ref Route53RecordDNS
+        - DomainName: !Ref DomainName
           HostedZoneId: !Ref HostedZoneID
       ValidationMethod: DNS
 Outputs:

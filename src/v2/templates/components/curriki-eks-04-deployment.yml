@@ -79,6 +79,10 @@ Parameters:
     Default: k8s.currikistudio.org
   HostedZoneID:
     Type: String
+  AdminUrl:
+    Type: String
+  DomainName:
+    Type: String
 Conditions:
   CreateTwoTargets:
     !Equals [ '2', !Ref NumberOfAZs ]
@@ -224,6 +228,7 @@ Resources:
                   sed "s/reactapph5pkey/$escaped/g" /curriki-eks/envs/.env.local  > /curriki-eks/envs/.env.local.new
                   mv /curriki-eks/envs/.env.local.new /curriki-eks/envs/.env.local
                   cp /curriki-eks/envs/.env.api.example /curriki-eks/envs/.env
+                  cp /curriki-eks/envs/.env.admin.example /curriki-eks/envs/.env.admin
                   escaped=$(echo ${LaravelFrontEndUrl}/api | sed 's%/%\\/%g')
                   sed "s/currikiappurl/$escaped/g" /curriki-eks/envs/.env  > /curriki-eks/envs/.env.new
                   mv /curriki-eks/envs/.env.new /curriki-eks/envs/.env
@@ -234,8 +239,17 @@ Resources:
                   sed -i 's/update-eks-es-user/${ElasticSearchUser}/g' /curriki-eks/src/v2/yamls/kibana.yml
                   sed -i 's/update-eks-es-password/${ElasticSearchPassword}/g' /curriki-eks/src/v2/yamls/kibana.yml
                   escaped=$(echo ${AcmCertArn} | sed 's%/%\\/%g')
+
+                  escaped=$(echo ${LaravelFrontEndUrl} | sed 's%/%\\/%g')
+                  sed "s/substitute-frontend-url/$escaped/g" /curriki-eks/envs/.env.admin  > /curriki-eks/envs/.env.admin.new
+                  mv /curriki-eks/envs/.env.admin.new /curriki-eks/envs/.env.admin
+                  escaped=$(echo ${AdminUrl} | sed 's%/%\\/%g')
+                  sed "s/substitute-admin-url/$escaped/g" /curriki-eks/envs/.env.admin  > /curriki-eks/envs/.env.admin.new
+                  mv /curriki-eks/envs/.env.admin.new /curriki-eks/envs/.env.admin
                   sed "s/substitute-me-acm-cert-substitute-me/$escaped/g" /curriki-eks/src/v2/yamls/istio-install.yaml  > /curriki-eks/src/v2/yamls/istio-install.yaml.new
                   mv /curriki-eks/src/v2/yamls/istio-install.yaml.new /curriki-eks/src/v2/yamls/istio-install.yaml
+                  sed "s/substitute-me-acm-cert-substitute-me/$escaped/g" /curriki-eks/src/v2/yamls/admin.yaml  > /curriki-eks/src/v2/yamls/admin.yaml.new
+                  mv /curriki-eks/src/v2/yamls/admin.yaml.new /curriki-eks/src/v2/yamls/admin.yaml
               mode: '000700'
               owner: root
               group: root
@@ -299,8 +313,10 @@ Resources:
                   #!/bin/bash -xe
                   sudo kubectl create secret generic currikidev-api-secret --from-file=/curriki-eks/envs/.env
                   sudo kubectl create secret generic currikidev-client-secret --from-file=/curriki-eks/envs/.env.local
+                  sudo kubectl create secret generic curriki-admin-env --from-file=/curriki-eks/envs/.env.admin
                   sudo kubectl create secret generic curriki-api-echo-server --from-file=/curriki-eks/envs/laravel-echo-server.json
                   sudo kubectl apply -k "github.com/kubernetes-sigs/aws-efs-csi-driver/deploy/kubernetes/overlays/stable/?ref=master"
+                  sudo kubectl apply -f /curriki-eks/src/v2/yamls/admin.yaml
                   sudo kubectl apply -f /curriki-eks/src/v2/yamls/api.yaml
                   sudo kubectl apply -f /curriki-eks/src/v2/yamls/client.yaml
                   sudo kubectl apply -f /curriki-eks/src/v2/yamls/api-es-index-load-job.yaml
