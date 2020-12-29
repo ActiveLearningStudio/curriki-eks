@@ -67,7 +67,7 @@ spec:
         #   periodSeconds: 10
         #   successThreshold: 1
         #   failureThreshold: 3
-        image: quay.io/curriki/curriki-admin:latest
+        image: curriki/admin:latest #quay.io/curriki/curriki-admin:latest
         resources: { }
         ports:
           - containerPort: 6000
