@@ -11,7 +11,8 @@ spec:
   type: LoadBalancer
   ports:
   - name: http
-    port: 6000
+    port: 80
+    targetPort: 5601
     protocol: TCP
   selector:
     io.kompose.service: currikidev-admin
