@@ -296,7 +296,7 @@ Resources:
                   sudo kubectl apply -f /curriki-eks/src/v2/yamls/es-svc.yml
                   sudo kubectl create secret generic redis --from-literal="REDIS_PASS=${RedisPassword}"
                   sudo kubectl apply -f /curriki-eks/src/v2/yamls/redis.yaml
-                  sleep 60
+                  sleep 120
                   sudo kubectl exec -i $(sudo kubectl get pods | grep elasticsearch-client | sed -n 1p | awk '{print $1}') -- bin/elasticsearch-users useradd ${ElasticSearchUser} -p ${ElasticSearchPassword} -r superuser
                   sudo kubectl apply -f /curriki-eks/src/v2/yamls/kibana.yml
               mode: '000700'
