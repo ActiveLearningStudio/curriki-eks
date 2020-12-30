@@ -89,16 +89,10 @@ Parameters:
     Type: String
     Description: Instance type for worker nodes
     ConstraintDescription: Must be a valid EC2 Instance Type
-    Default: t2.large
+    Default: t2.xlarge
     AllowedValues:
-      - t1.micro
-      - t2.nano
-      - t2.micro
-      - t2.small
-      - t2.medium
-      - t2.large
-      - m1.small
-      - m1.medium
+      - t2.xlarge
+      - t2.2xlarge
       - m1.large
       - m1.xlarge
       - m2.xlarge
