@@ -27,6 +27,7 @@ Parameters:
     Description: Instance type for worker nodes
     ConstraintDescription: Must be a valid EC2 Instance Type
     AllowedValues:
+      - t2.large
       - t2.xlarge
       - t2.2xlarge
       - m1.large

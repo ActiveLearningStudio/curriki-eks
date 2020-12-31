@@ -16,47 +16,93 @@ Resources:
             - resources.cloudformation.amazonaws.com
             - cloudformation.amazonaws.com
             - ec2.amazonaws.com
-            # AWS: !GetAtt MyInstanceProfileRole.Arn
       Path: '/' 
       RoleName: 
-        Fn::Sub: "${AWS::StackName}-CurrikiCloudformationRole" #change role name, like curriki-kubernetes
+        Fn::Sub: "${AWS::StackName}-CurrikiCloudformationRole"
       Policies:
       - PolicyName: 
           Fn::Sub: "${AWS::StackName}-CurrikiAllPreviligesPolicy"
         PolicyDocument:
           Version: 2012-10-17
           Statement:
-          - Sid: CurrikiAllPreviliges
-            Action: "*"
+          - Sid: CurrikiStudioAccess
             Effect: Allow
             Resource: "*"
-  # MyInstanceProfileRole:
-  #   Type: AWS::IAM::Role
-  #   Properties:
-  #     AssumeRolePolicyDocument:
-  #       Version: 2012-10-17
-  #       Statement:
-  #       - Effect: Allow
-  #         Action: sts:AssumeRole
-  #         Principal:
-  #           Service: 
-  #           - ec2.amazonaws.com
-  #     Path: '/' 
-  #     RoleName: 
-  #       Fn::Sub: "${AWS::StackName}-CurrikiInstanceProfileRole"
-  #     Policies:
-  #     - PolicyName: 
-  #         Fn::Sub: "${AWS::StackName}-CurrikiInstanceProfilePreviligesPolicy"
-  #       PolicyDocument:
-  #         Version: 2012-10-17
-  #         Statement:
-  #         - Sid: CurrikiInstanceProfilePreviliges
-  #           Action: "*"
-  #           Effect: Allow
-  #           Resource: "*"
+            Action:
+            - autoscaling:DescribeAutoScalingGroups
+            - autoscaling:UpdateAutoScalingGroup
+            - elasticloadbalancing:AddTags
+            - elasticloadbalancing:ApplySecurityGroupsToLoadBalancer
+            - elasticloadbalancing:AttachLoadBalancerToSubnets
+            - elasticloadbalancing:ConfigureHealthCheck
+            - elasticloadbalancing:CreateListener
+            - elasticloadbalancing:CreateLoadBalancer
+            - elasticloadbalancing:CreateLoadBalancerListeners
+            - elasticloadbalancing:CreateLoadBalancerPolicy
+            - elasticloadbalancing:CreateTargetGroup
+            - elasticloadbalancing:DeleteListener
+            - elasticloadbalancing:DeleteLoadBalancer
+            - elasticloadbalancing:DeleteLoadBalancerListeners
+            - elasticloadbalancing:DeleteTargetGroup
+            - elasticloadbalancing:DeregisterInstancesFromLoadBalancer
+            - elasticloadbalancing:DeregisterTargets
+            - elasticloadbalancing:DescribeListeners
+            - elasticloadbalancing:DescribeLoadBalancerAttributes
+            - elasticloadbalancing:DescribeLoadBalancerPolicies
+            - elasticloadbalancing:DescribeLoadBalancers
+            - elasticloadbalancing:DescribeTargetGroupAttributes
+            - elasticloadbalancing:DescribeTargetGroups
+            - elasticloadbalancing:DescribeTargetHealth
+            - elasticloadbalancing:DetachLoadBalancerFromSubnets
+            - elasticloadbalancing:ModifyListener
+            - elasticloadbalancing:ModifyLoadBalancerAttributes
+            - elasticloadbalancing:ModifyTargetGroup
+            - elasticloadbalancing:ModifyTargetGroupAttributes
+            - elasticloadbalancing:RegisterInstancesWithLoadBalancer
+            - elasticloadbalancing:RegisterTargets
+            - elasticloadbalancing:SetLoadBalancerPoliciesForBackendServer
+            - elasticloadbalancing:SetLoadBalancerPoliciesOfListener
+            - kms:DescribeKey
+            - secretsmanager:*
+            - ssm:GetParameters
+            - elasticfilesystem:CreateFileSystem
+            - elasticfilesystem:DescribeFileSystems
+            - elasticfilesystem:DeleteFileSystem
+            - elasticfilesystem:PutLifecycleConfiguration
+            - elasticfilesystem:PutBackupPolicy
+            - elasticfilesystem:CreateMountTarget
+            - elasticfilesystem:DescribeMountTargets
+            - sts:AssumeRole
+            - route53:ChangeResourceRecordSets
+            - ec2:DescribeKeyPairs
+            - ec2:DescribeAvailabilityZones
+            - s3:ListBucket
+            - s3:*Object
+            - ec2:CreateVpc
+            - ec2:CreateInternetGateway
+            - ec2:allocateAddress
+            - acm:RequestCertificate
+            - acm:DescribeCertificate
+            - iam:CreateRole
+            - iam:AttachRolePolicy
+            - iam:PassRole
+            - ec2:create*
+            - ec2:Describe*
+            - ec2:Delete*
+            - ec2:describeAddresses
+            - ec2:Modify*
+            - iam:PutRolePolicy
+            - ec2:AttachInternetGateway
+            - ec2:AuthorizeSecurityGroupIngress
+            - ec2:AssociateRouteTable
+            - iam:GetRole
+            - eks:*
+            - rds:*
+            - iam:ListAttachedRolePolicies
+            - ec2:RunInstances
+
+          
   EC2InstanceProfile:
-    # DependsOn:
-        # - MyInstanceProfileRole  #remove this
     Type: "AWS::IAM::InstanceProfile"
     Properties: 
       Path: "/"

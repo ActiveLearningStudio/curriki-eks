@@ -84,13 +84,14 @@ Parameters:
   EbsDiskSize:
     Type: Number
     Description: Size of EBS Volume to be attached with worker nodes
-    Default: 8
+    Default: 30
   InstanceType:
     Type: String
     Description: Instance type for worker nodes
     ConstraintDescription: Must be a valid EC2 Instance Type
     Default: t2.xlarge
     AllowedValues:
+      - t2.large
       - t2.xlarge
       - t2.2xlarge
       - m1.large
