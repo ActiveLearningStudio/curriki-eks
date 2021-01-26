@@ -1,6 +1,202 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: 'EKS Cluster and Managed Nodes'
+Metadata:
+
+  Authors:
+    Description: Ali Mehdi (ali@curriki.org)
+  License:
+    Description: 'Copyright 2021 Curriki.org, Inc. and its affiliates. All Rights Reserved.'
+
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+    - Label:
+        default: General AWS
+      Parameters:
+        - SshAccessCidr
+    - Label:
+        default: Network
+      Parameters:
+        - NumberOfAZs
+        - AvailabilityZones
+        - VpcCidr
+        - VpcTenancy
+        - PublicSubnet0Cidr
+        - PublicSubnet1Cidr
+        - PublicSubnet2Cidr
+        - PublicSubnet3Cidr
+        - PublicSubnet4Cidr
+        - PublicSubnet5Cidr
+        - PrivateSubnet0Cidr
+        - PrivateSubnet1Cidr
+        - PrivateSubnet2Cidr
+        - PrivateSubnet3Cidr
+        - PrivateSubnet4Cidr
+        - PrivateSubnet5Cidr
+    - Label:
+        default: Bastion Tier
+      Parameters:
+        - BastionInstanceType
+    - Label:
+        default: Web Tier
+      Parameters:
+        - PublicAlbAcmCertificate
+        - PHPVersion
+        - PHPIniOverride
+    ParameterLabels:
+      BastionInstanceType:
+        default: Bastion Instance Type
+      PHPIniOverride:
+        default: AWS php.ini Overrides
+      PublicAlbAcmCertificate:
+        default: ALB Certificate ARN
+      SshAccessCidr:
+        default: SSH Access From
+      WebInstanceType:
+        default: Web Tier Instance Type
+      AvailabilityZones:
+        default: Availability Zones
+      NumberOfAZs:
+        default: Number of Availability Zones
+      VpcCidr:
+        default: VpcCidr
+      VpcTenancy:
+        default: VpcTenancy
+      PHPVersion:
+        default: PHP Version
+      PublicSubnet0Cidr:
+        default: Public Subnet 0
+      PublicSubnet1Cidr:
+        default: Public Subnet 1
+      PublicSubnet2Cidr:
+        default: Public Subnet 2
+      PublicSubnet3Cidr:
+        default: Public Subnet 3
+      PublicSubnet4Cidr:
+        default: Public Subnet 4
+      PublicSubnet5Cidr:
+        default: Public Subnet 5
+      PrivateSubnet0Cidr:
+        default: Private Subnet 0
+      PrivateSubnet1Cidr:
+        default: Private Subnet 1
+      PrivateSubnet2Cidr:
+        default: Private Subnet 2
+      PrivateSubnet3Cidr:
+        default: Private Subnet 3
+      PrivateSubnet4Cidr:
+        default: Private Subnet 4
+      PrivateSubnet5Cidr:
+        default: Private Subnet 5
+
 Parameters:
+  SshAccessCidr:
+    AllowedPattern: ^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/([0-9]|[1-2][0-9]|3[0-2]))$
+    Description: The CIDR IP range that is permitted to SSH to bastion instance. Note - a value of 0.0.0.0/0 will allow access from ANY IP address.
+    Type: String
+    Default: 0.0.0.0/0
+  AvailabilityZones:
+    Description: 'List of Availability Zones to use for the subnets in the VPC. Note:
+      The logical order is preserved.'
+    Type: List<AWS::EC2::AvailabilityZone::Name>
+  NumberOfAZs:
+    AllowedValues:
+    - 2
+    - 3
+    - 4
+    - 5
+    - 6
+    Default: 3
+    Description: Number of Availability Zones to use in the VPC. This must match your
+      selections in the list of Availability Zones parameter.
+    Type: Number
+  VpcCidr:
+    AllowedPattern: "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\\/(1[6-9]|2[0-8]))$"
+    ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/16-28
+    Default: 10.0.0.0/16
+    Description: CIDR block for the VPC
+    Type: String
+  VpcTenancy:
+    AllowedValues:
+    - default
+    - dedicated
+    Default: default
+    Description: The allowed tenancy of instances launched into the VPC
+    Type: String
+  PublicSubnet0Cidr:
+    AllowedPattern: "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\\/(1[6-9]|2[0-8]))$"
+    ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/16-28
+    Default: 10.0.200.0/24
+    Description: CIDR block for Public subnet 0 located in Availability Zone 0
+    Type: String
+  PublicSubnet1Cidr:
+    AllowedPattern: "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\\/(1[6-9]|2[0-8]))$"
+    ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/16-28
+    Default: 10.0.201.0/24
+    Description: CIDR block for Public subnet 1 located in Availability Zone 1
+    Type: String
+  PublicSubnet2Cidr:
+    AllowedPattern: "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\\/(1[6-9]|2[0-8]))$"
+    ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/16-28
+    Default: 10.0.202.0/24
+    Description: CIDR block for Public subnet 2 located in Availability Zone 2
+    Type: String
+  PublicSubnet3Cidr:
+    AllowedPattern: "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\\/(1[6-9]|2[0-8]))$"
+    ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/16-28
+    Default: 10.0.203.0/24
+    Description: CIDR block for Public subnet 3 located in Availability Zone 3
+    Type: String
+  PublicSubnet4Cidr:
+    AllowedPattern: "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\\/(1[6-9]|2[0-8]))$"
+    ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/16-28
+    Default: 10.0.204.0/24
+    Description: CIDR block for Public subnet 4 located in Availability Zone 4
+    Type: String
+  PublicSubnet5Cidr:
+    AllowedPattern: "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\\/(1[6-9]|2[0-8]))$"
+    ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/16-28
+    Default: 10.0.205.0/24
+    Description: CIDR block for Public subnet 5 located in Availability Zone 5
+    Type: String
+  PrivateSubnet0Cidr:
+    AllowedPattern: "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\\/(1[6-9]|2[0-8]))$"
+    ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/16-28
+    Default: 10.0.0.0/22
+    Description: CIDR block for Web subnet 0 located in Availability Zone 0
+    Type: String
+  PrivateSubnet1Cidr:
+    AllowedPattern: "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\\/(1[6-9]|2[0-8]))$"
+    ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/16-28
+    Default: 10.0.4.0/22
+    Description: CIDR block for Web subnet 1 located in Availability Zone 1
+    Type: String
+  PrivateSubnet2Cidr:
+    AllowedPattern: "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\\/(1[6-9]|2[0-8]))$"
+    ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/16-28
+    Default: 10.0.8.0/22
+    Description: CIDR block for Web subnet 2 located in Availability Zone 2
+    Type: String
+  PrivateSubnet3Cidr:
+    AllowedPattern: "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\\/(1[6-9]|2[0-8]))$"
+    ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/16-28
+    Default: 10.0.12.0/22
+    Description: CIDR block for Web subnet 3 located in Availability Zone 3
+    Type: String
+  PrivateSubnet4Cidr:
+    AllowedPattern: "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\\/(1[6-9]|2[0-8]))$"
+    ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/16-28
+    Default: 10.0.16.0/22
+    Description: CIDR block for Web subnet 4 located in Availability Zone 4
+    Type: String
+  PrivateSubnet5Cidr:
+    AllowedPattern: "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\\/(1[6-9]|2[0-8]))$"
+    ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/16-28
+    Default: 10.0.20.0/22
+    Description: CIDR block for Web subnet 5 located in Availability Zone 5
+    Type: String
+  ClusterName: 
+    Type: String
+    Description: Name of your managed EKS Cluster
   AvailabilityZones:
     Description: 'List of Availability Zones to use for the subnets in the VPC. Note:
       The logical order is preserved.'
@@ -39,41 +235,6 @@ Parameters:
     Type: String
     Description: CIDR Block for VPC
     Default: 10.0.0.0/16
-  PublicSubnetCidrBlockA:
-    Type: String
-    Description: CIDR Block for Public Subnet
-    Default: 10.0.200.0/24
-  PublicSubnetCidrBlockB:
-    Type: String
-    Description: CIDR Block for Public Subnet
-    Default: 10.0.201.0/24
-  PublicSubnetCidrBlockC:
-    Type: String
-    Description: CIDR Block for Public Subnet
-    Default: 10.0.202.0/24
-  PublicSubnetCidrBlockD:
-    Type: String
-    Description: CIDR Block for Public Subnet
-    Default: 10.0.203.0/24
-  PrivateSubnetCidrBlockA:
-    Type: String
-    Description: CIDR Block for Private Subnet
-    Default: 10.0.0.0/22
-  PrivateSubnetCidrBlockB:
-    Type: String
-    Description: CIDR Block for Private Subnet
-    Default: 10.0.4.0/22
-  PrivateSubnetCidrBlockC:
-    Type: String
-    Description: CIDR Block for Private Subnet
-    Default: 10.0.8.0/22
-  PrivateSubnetCidrBlockD:
-    Type: String
-    Description: CIDR Block for Private Subnet
-    Default: 10.0.12.0/22
-  ClusterName: 
-    Type: String
-    Description: Name of your managed EKS Cluster
   EksVersion:
     Type: String
     Description: EKS Version
@@ -208,14 +369,14 @@ Resources:
         ClusterName: !Ref ClusterName
         EksVersion: !Ref EksVersion
         VpcCidrBlock: !Ref VpcCidrBlock
-        PublicSubnetCidrBlockA: !Ref PublicSubnetCidrBlockA
-        PublicSubnetCidrBlockB: !Ref PublicSubnetCidrBlockB
-        PublicSubnetCidrBlockC: !Ref PublicSubnetCidrBlockC
-        PublicSubnetCidrBlockD: !Ref PublicSubnetCidrBlockD
-        PrivateSubnetCidrBlockA: !Ref PrivateSubnetCidrBlockA
-        PrivateSubnetCidrBlockB: !Ref PrivateSubnetCidrBlockB
-        PrivateSubnetCidrBlockC: !Ref PrivateSubnetCidrBlockC
-        PrivateSubnetCidrBlockD: !Ref PrivateSubnetCidrBlockD
+        PublicSubnet1Cidr: !Ref PublicSubnet1Cidr
+        PublicSubnet2Cidr: !Ref PublicSubnet2Cidr
+        PublicSubnet3Cidr: !Ref PublicSubnet3Cidr
+        PublicSubnet4Cidr: !Ref PublicSubnet4Cidr
+        PrivateSubnet1Cidr: !Ref PrivateSubnet1Cidr
+        PrivateSubnet2Cidr: !Ref PrivateSubnet2Cidr
+        PrivateSubnet3Cidr: !Ref PrivateSubnet3Cidr
+        PrivateSubnet4Cidr: !Ref PrivateSubnet4Cidr
         HostedZoneID: !Ref HostedZoneID
         DomainName: !Ref DomainName
         AvailabilityZones: 

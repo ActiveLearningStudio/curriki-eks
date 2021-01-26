@@ -1,6 +1,7 @@
 ---
-AWSTemplateFormatVersion: '2010-09-09'
-Description: 'EKS cluster'
+AWSTemplateFormatVersion: 2010-09-09
+
+Description: Stack to deploy a highly available, elastic, scalable WordPress environment. This master stack launches multiple nested stacks for different tiers. !! This can only be run in certain AWS Regions - 'us-east-1', 'us-east-2', 'us-west-2', 'eu-west-1'.
 Mappings:
   ServicePrincipalPartitionMap:
     aws:
@@ -15,7 +16,99 @@ Mappings:
       EC2: ec2.amazonaws.com
       EKS: eks.amazonaws.com
       EKSFargatePods: eks-fargate-pods.amazonaws.com
+Metadata:
+
+  Authors:
+    Description: Ali Mehdi (ali@curriki.org)
+  License:
+    Description: 'Copyright 2021 Curriki.org, Inc. and its affiliates. All Rights Reserved.'
+
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+    - Label:
+        default: General AWS
+      Parameters:
+        - SshAccessCidr
+    - Label:
+        default: Network
+      Parameters:
+        - NumberOfAZs
+        - AvailabilityZones
+        - VpcCidr
+        - VpcTenancy
+        - PublicSubnet0Cidr
+        - PublicSubnet1Cidr
+        - PublicSubnet2Cidr
+        - PublicSubnet3Cidr
+        - PublicSubnet4Cidr
+        - PublicSubnet5Cidr
+        - PrivateSubnet0Cidr
+        - PrivateSubnet1Cidr
+        - PrivateSubnet2Cidr
+        - PrivateSubnet3Cidr
+        - PrivateSubnet4Cidr
+        - PrivateSubnet5Cidr
+    - Label:
+        default: Web Tier
+      Parameters:
+        - PublicAlbAcmCertificate
+        - PHPVersion
+        - PHPIniOverride
+    ParameterLabels:
+      PHPIniOverride:
+        default: AWS php.ini Overrides
+      PublicAlbAcmCertificate:
+        default: ALB Certificate ARN
+      SshAccessCidr:
+        default: SSH Access From
+      AvailabilityZones:
+        default: Availability Zones
+      NumberOfAZs:
+        default: Number of Availability Zones
+      VpcCidr:
+        default: VpcCidr
+      VpcTenancy:
+        default: VpcTenancy
+      PHPVersion:
+        default: PHP Version
+      PublicSubnet0Cidr:
+        default: Public Subnet 0
+      PublicSubnet1Cidr:
+        default: Public Subnet 1
+      PublicSubnet2Cidr:
+        default: Public Subnet 2
+      PublicSubnet3Cidr:
+        default: Public Subnet 3
+      PublicSubnet4Cidr:
+        default: Public Subnet 4
+      PublicSubnet5Cidr:
+        default: Public Subnet 5
+      PrivateSubnet0Cidr:
+        default: Private Subnet 0
+      PrivateSubnet1Cidr:
+        default: Private Subnet 1
+      PrivateSubnet2Cidr:
+        default: Private Subnet 2
+      PrivateSubnet3Cidr:
+        default: Private Subnet 3
+      PrivateSubnet4Cidr:
+        default: Private Subnet 4
+      PrivateSubnet5Cidr:
+        default: Private Subnet 5
+
 Parameters:
+  DomainName:
+    Type: String
+  HostedZoneID:
+    Type: String
+  VpcCidrBlock:
+    Type: String
+    Description: CIDR Block for VPC
+  SshAccessCidr:
+    AllowedPattern: ^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/([0-9]|[1-2][0-9]|3[0-2]))$
+    Description: The CIDR IP range that is permitted to SSH to bastion instance. Note - a value of 0.0.0.0/0 will allow access from ANY IP address.
+    Type: String
+    Default: 0.0.0.0/0
   AvailabilityZones:
     Description: 'List of Availability Zones to use for the subnets in the VPC. Note:
       The logical order is preserved.'
@@ -27,56 +120,140 @@ Parameters:
     - 4
     - 5
     - 6
+    Default: 3
     Description: Number of Availability Zones to use in the VPC. This must match your
       selections in the list of Availability Zones parameter.
     Type: Number
+  VpcCidr:
+    AllowedPattern: "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\\/(1[6-9]|2[0-8]))$"
+    ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/16-28
+    Default: 10.0.0.0/16
+    Description: CIDR block for the VPC
+    Type: String
+  VpcTenancy:
+    AllowedValues:
+    - default
+    - dedicated
+    Default: default
+    Description: The allowed tenancy of instances launched into the VPC
+    Type: String
+  PublicSubnet0Cidr:
+    AllowedPattern: "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\\/(1[6-9]|2[0-8]))$"
+    ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/16-28
+    Default: 10.0.200.0/24
+    Description: CIDR block for Public subnet 0 located in Availability Zone 0
+    Type: String
+  PublicSubnet1Cidr:
+    AllowedPattern: "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\\/(1[6-9]|2[0-8]))$"
+    ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/16-28
+    Default: 10.0.201.0/24
+    Description: CIDR block for Public subnet 1 located in Availability Zone 1
+    Type: String
+  PublicSubnet2Cidr:
+    AllowedPattern: "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\\/(1[6-9]|2[0-8]))$"
+    ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/16-28
+    Default: 10.0.202.0/24
+    Description: CIDR block for Public subnet 2 located in Availability Zone 2
+    Type: String
+  PublicSubnet3Cidr:
+    AllowedPattern: "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\\/(1[6-9]|2[0-8]))$"
+    ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/16-28
+    Default: 10.0.203.0/24
+    Description: CIDR block for Public subnet 3 located in Availability Zone 3
+    Type: String
+  PublicSubnet4Cidr:
+    AllowedPattern: "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\\/(1[6-9]|2[0-8]))$"
+    ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/16-28
+    Default: 10.0.204.0/24
+    Description: CIDR block for Public subnet 4 located in Availability Zone 4
+    Type: String
+  PublicSubnet5Cidr:
+    AllowedPattern: "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\\/(1[6-9]|2[0-8]))$"
+    ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/16-28
+    Default: 10.0.205.0/24
+    Description: CIDR block for Public subnet 5 located in Availability Zone 5
+    Type: String
+  PrivateSubnet0Cidr:
+    AllowedPattern: "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\\/(1[6-9]|2[0-8]))$"
+    ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/16-28
+    Default: 10.0.0.0/22
+    Description: CIDR block for Web subnet 0 located in Availability Zone 0
+    Type: String
+  PrivateSubnet1Cidr:
+    AllowedPattern: "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\\/(1[6-9]|2[0-8]))$"
+    ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/16-28
+    Default: 10.0.4.0/22
+    Description: CIDR block for Web subnet 1 located in Availability Zone 1
+    Type: String
+  PrivateSubnet2Cidr:
+    AllowedPattern: "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\\/(1[6-9]|2[0-8]))$"
+    ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/16-28
+    Default: 10.0.8.0/22
+    Description: CIDR block for Web subnet 2 located in Availability Zone 2
+    Type: String
+  PrivateSubnet3Cidr:
+    AllowedPattern: "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\\/(1[6-9]|2[0-8]))$"
+    ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/16-28
+    Default: 10.0.12.0/22
+    Description: CIDR block for Web subnet 3 located in Availability Zone 3
+    Type: String
+  PrivateSubnet4Cidr:
+    AllowedPattern: "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\\/(1[6-9]|2[0-8]))$"
+    ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/16-28
+    Default: 10.0.16.0/22
+    Description: CIDR block for Web subnet 4 located in Availability Zone 4
+    Type: String
+  PrivateSubnet5Cidr:
+    AllowedPattern: "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\\/(1[6-9]|2[0-8]))$"
+    ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/16-28
+    Default: 10.0.20.0/22
+    Description: CIDR block for Web subnet 5 located in Availability Zone 5
+    Type: String
   ClusterName: 
     Type: String
     Description: Name of your managed EKS Cluster
   EksVersion:
     Type: String
     Description: EKS Version
-  VpcCidrBlock:
-    Type: String
-    Description: CIDR Block for VPC
-  PublicSubnetCidrBlockA:
-    Type: String
-    Description: CIDR Block for Public Subnet
-  PublicSubnetCidrBlockB:
-    Type: String
-    Description: CIDR Block for Public Subnet
-  PublicSubnetCidrBlockC:
-    Type: String
-    Description: CIDR Block for Public Subnet
-  PublicSubnetCidrBlockD:
-    Type: String
-    Description: CIDR Block for Public Subnet
-  PrivateSubnetCidrBlockA:
-    Type: String
-    Description: CIDR Block for Private Subnet
-  PrivateSubnetCidrBlockB:
-    Type: String
-    Description: CIDR Block for Private Subnet
-  PrivateSubnetCidrBlockC:
-    Type: String
-    Description: CIDR Block for Private Subnet
-  PrivateSubnetCidrBlockD:
-    Type: String
-    Description: CIDR Block for Private Subnet
-  DomainName:
-    Type: String
-  HostedZoneID:
-    Type: String
-
 Conditions:
-  CreateTwoSubnets:
-    !Equals [ '2', !Ref NumberOfAZs ]
-    
-  CreateThreeSubnets:
-    !Equals [ '3', !Ref NumberOfAZs ]
-
-  CreateFourSubnets:
-    !Equals [ '4', !Ref NumberOfAZs ]
+  NumberOfAZs1:
+      !Equals [ '1', !Ref NumberOfAZs ]
+  NumberOfAZs2:
+      !Equals [ '2', !Ref NumberOfAZs ]
+  NumberOfAZs3:
+      !Equals [ '3', !Ref NumberOfAZs ]
+  NumberOfAZs4:
+      !Equals [ '4', !Ref NumberOfAZs ]
+  NumberOfAZs5:
+      !Equals [ '5', !Ref NumberOfAZs ]
+  NumberOfAZs6:
+      !Equals [ '6', !Ref NumberOfAZs ]
+  AZ0: !Or
+    - !Condition NumberOfAZs1
+    - !Condition NumberOfAZs2
+    - !Condition NumberOfAZs3
+    - !Condition NumberOfAZs4
+    - !Condition NumberOfAZs5
+    - !Condition NumberOfAZs6
+  AZ1: !Or
+    - !Condition NumberOfAZs2
+    - !Condition NumberOfAZs3
+    - !Condition NumberOfAZs4
+    - !Condition NumberOfAZs5
+    - !Condition NumberOfAZs6
+  AZ2: !Or
+    - !Condition NumberOfAZs3
+    - !Condition NumberOfAZs4
+    - !Condition NumberOfAZs5
+    - !Condition NumberOfAZs6
+  AZ3: !Or
+    - !Condition NumberOfAZs4
+    - !Condition NumberOfAZs5
+    - !Condition NumberOfAZs6
+  AZ4: !Or
+    - !Condition NumberOfAZs5
+    - !Condition NumberOfAZs6
+  AZ5: !Condition NumberOfAZs6
 
 Resources:
   ClusterSharedNodeSecurityGroup:
@@ -97,7 +274,7 @@ Resources:
         SecurityGroupIds:
         - Ref: ControlPlaneSecurityGroup
         - Ref: Ec2SecurityGroup
-        SubnetIds: !If [ CreateTwoSubnets, [!Ref SubnetPublic1A, !Ref SubnetPublic1B, !Ref SubnetPrivate1A, !Ref SubnetPrivate1B], !If [ CreateThreeSubnets, [!Ref SubnetPublic1A, !Ref SubnetPublic1B, !Ref SubnetPublic1C3, !Ref SubnetPrivate1A, !Ref SubnetPrivate1B, !Ref SubnetPrivate1C3], [!Ref SubnetPublic1A, !Ref SubnetPublic1B, !Ref SubnetPublic1C, !Ref SubnetPublic1D, !Ref SubnetPrivate1A, !Ref SubnetPrivate1B, !Ref SubnetPrivate1C, !Ref SubnetPrivate1D] ]]
+        SubnetIds: !If [ AZ1, [!Ref PublicSubnet0, !Ref PublicSubnet1, !Ref PrivateSubnet0, !Ref PrivateSubnet1], !If [ AZ2, [!Ref PublicSubnet0, !Ref PublicSubnet1, !Ref PublicSubnet2, !Ref PrivateSubnet0, !Ref PrivateSubnet1, !Ref PrivateSubnet2], [!Ref PublicSubnet0, !Ref PublicSubnet1, !Ref PublicSubnet2, !Ref PublicSubnet3, !Ref PrivateSubnet0, !Ref PrivateSubnet1, !Ref PrivateSubnet2, !Ref PrivateSubnet3] ]]
       RoleArn:
         Fn::GetAtt:
         - ServiceRole
@@ -151,77 +328,6 @@ Resources:
       SourceSecurityGroupId:
         Ref: ClusterSharedNodeSecurityGroup
       ToPort: 65535
-  InternetGateway:
-    Type: AWS::EC2::InternetGateway
-    Properties:
-      Tags:
-      - Key: Name
-        Value:
-          Fn::Sub: "${AWS::StackName}/InternetGateway"
-  NATGateway:
-    Type: AWS::EC2::NatGateway
-    Properties:
-      AllocationId:
-        Fn::GetAtt:
-        - NATIP
-        - AllocationId
-      SubnetId:
-        Ref: SubnetPublic1A
-      Tags:
-      - Key: Name
-        Value:
-          Fn::Sub: "${AWS::StackName}/NATGateway"
-  NATIP:
-    Type: AWS::EC2::EIP
-    Properties:
-      Domain: vpc
-      Tags:
-      - Key: Name
-        Value:
-          Fn::Sub: "${AWS::StackName}/NATIP"
-  NATPrivateSubnetRoute1A:
-    Type: AWS::EC2::Route
-    Properties:
-      DestinationCidrBlock: 0.0.0.0/0
-      NatGatewayId:
-        Ref: NATGateway
-      RouteTableId:
-        Ref: PrivateRouteTable1A
-  NATPrivateSubnetRoute1B:
-    Type: AWS::EC2::Route
-    Properties:
-      DestinationCidrBlock: 0.0.0.0/0
-      NatGatewayId:
-        Ref: NATGateway
-      RouteTableId:
-        Ref: PrivateRouteTable1B
-  NATPrivateSubnetRoute1C:
-    Condition: CreateThreeSubnets
-    Type: AWS::EC2::Route
-    Properties:
-      DestinationCidrBlock: 0.0.0.0/0
-      NatGatewayId:
-        Ref: NATGateway
-      RouteTableId:
-        Ref: PrivateRouteTable1C3
-  NATPrivateSubnetRoute1C:
-    Condition: CreateFourSubnets
-    Type: AWS::EC2::Route
-    Properties:
-      DestinationCidrBlock: 0.0.0.0/0
-      NatGatewayId:
-        Ref: NATGateway
-      RouteTableId:
-        Ref: PrivateRouteTable1C
-  NATPrivateSubnetRoute1D:
-    Condition: CreateFourSubnets
-    Type: AWS::EC2::Route
-    Properties:
-      DestinationCidrBlock: 0.0.0.0/0
-      NatGatewayId:
-        Ref: NATGateway
-      RouteTableId:
-        Ref: PrivateRouteTable1D
   PolicyCloudWatchMetrics:
     Type: AWS::IAM::Policy
     Properties:
@@ -250,149 +356,6 @@ Resources:
         Fn::Sub: "${AWS::StackName}-PolicyELBPermissions"
       Roles:
       - Ref: ServiceRole
-  PrivateRouteTable1A:
-    Type: AWS::EC2::RouteTable
-    Properties:
-      Tags:
-      - Key: Name
-        Value:
-          Fn::Sub: "${AWS::StackName}/PrivateRouteTable1A"
-      VpcId:
-        Ref: VPC
-  PrivateRouteTable1B:
-    Type: AWS::EC2::RouteTable
-    Properties:
-      Tags:
-      - Key: Name
-        Value:
-          Fn::Sub: "${AWS::StackName}/PrivateRouteTable1B"
-      VpcId:
-        Ref: VPC
-  PrivateRouteTable1C3:
-    Condition: CreateThreeSubnets
-    Type: AWS::EC2::RouteTable
-    Properties:
-      Tags:
-      - Key: Name
-        Value:
-          Fn::Sub: "${AWS::StackName}/PrivateRouteTable1C"
-      VpcId:
-        Ref: VPC
-  PrivateRouteTable1C:
-    Condition: CreateFourSubnets
-    Type: AWS::EC2::RouteTable
-    Properties:
-      Tags:
-      - Key: Name
-        Value:
-          Fn::Sub: "${AWS::StackName}/PrivateRouteTable1C"
-      VpcId:
-        Ref: VPC
-  PrivateRouteTable1D:
-    Condition: CreateFourSubnets
-    Type: AWS::EC2::RouteTable
-    Properties:
-      Tags:
-      - Key: Name
-        Value:
-          Fn::Sub: "${AWS::StackName}/PrivateRouteTable1D"
-      VpcId:
-        Ref: VPC
-  PublicRouteTable:
-    Type: AWS::EC2::RouteTable
-    Properties:
-      Tags:
-      - Key: Name
-        Value:
-          Fn::Sub: "${AWS::StackName}/PublicRouteTable"
-      VpcId:
-        Ref: VPC
-  PublicSubnetRoute:
-    Type: AWS::EC2::Route
-    Properties:
-      DestinationCidrBlock: 0.0.0.0/0
-      GatewayId:
-        Ref: InternetGateway
-      RouteTableId:
-        Ref: PublicRouteTable
-    DependsOn:
-    - VPCGatewayAttachment
-  RouteTableAssociationPrivate1A:
-    Type: AWS::EC2::SubnetRouteTableAssociation
-    Properties:
-      RouteTableId:
-        Ref: PrivateRouteTable1A
-      SubnetId:
-        Ref: SubnetPrivate1A
-  RouteTableAssociationPrivate1B:
-    Type: AWS::EC2::SubnetRouteTableAssociation
-    Properties:
-      RouteTableId:
-        Ref: PrivateRouteTable1B
-      SubnetId:
-        Ref: SubnetPrivate1B
-  RouteTableAssociationPrivate1C3:
-    Condition: CreateThreeSubnets
-    Type: AWS::EC2::SubnetRouteTableAssociation
-    Properties:
-      RouteTableId:
-        Ref: PrivateRouteTable1C3
-      SubnetId:
-        Ref: SubnetPrivate1C3
-  RouteTableAssociationPrivate1C:
-    Condition: CreateFourSubnets
-    Type: AWS::EC2::SubnetRouteTableAssociation
-    Properties:
-      RouteTableId:
-        Ref: PrivateRouteTable1C
-      SubnetId:
-        Ref: SubnetPrivate1C
-  RouteTableAssociationPrivate1D:
-    Condition: CreateFourSubnets
-    Type: AWS::EC2::SubnetRouteTableAssociation
-    Properties:
-      RouteTableId:
-        Ref: PrivateRouteTable1D
-      SubnetId:
-        Ref: SubnetPrivate1D
-  RouteTableAssociationPublic1A:
-    Type: AWS::EC2::SubnetRouteTableAssociation
-    Properties:
-      RouteTableId:
-        Ref: PublicRouteTable
-      SubnetId:
-        Ref: SubnetPublic1A
-  RouteTableAssociationPublic1B:
-    Type: AWS::EC2::SubnetRouteTableAssociation
-    Properties:
-      RouteTableId:
-        Ref: PublicRouteTable
-      SubnetId:
-        Ref: SubnetPublic1B
-  RouteTableAssociationPublic1C3:
-    Condition: CreateThreeSubnets
-    Type: AWS::EC2::SubnetRouteTableAssociation
-    Properties:
-      RouteTableId:
-        Ref: PublicRouteTable
-      SubnetId:
-        Ref: SubnetPublic1C3
-  RouteTableAssociationPublic1C:
-    Condition: CreateFourSubnets
-    Type: AWS::EC2::SubnetRouteTableAssociation
-    Properties:
-      RouteTableId:
-        Ref: PublicRouteTable
-      SubnetId:
-        Ref: SubnetPublic1C
-  RouteTableAssociationPublic1D:
-    Condition: CreateFourSubnets
-    Type: AWS::EC2::SubnetRouteTableAssociation
-    Properties:
-      RouteTableId:
-        Ref: PublicRouteTable
-      SubnetId:
-        Ref: SubnetPublic1D
   ServiceRole:
     Type: AWS::IAM::Role
     Properties:
@@ -418,164 +381,6 @@ Resources:
       - Key: Name
         Value:
           Fn::Sub: "${AWS::StackName}/ServiceRole"
-  SubnetPrivate1A:
-    Type: AWS::EC2::Subnet
-    Properties:
-      AvailabilityZone: !Select [ 0, !Ref AvailabilityZones ]
-      CidrBlock: !Ref PrivateSubnetCidrBlockA
-      Tags:
-      - Key: kubernetes.io/role/internal-elb
-        Value: '1'
-      - Key: Name
-        Value:
-          Fn::Sub: "${AWS::StackName}/SubnetPrivate1A"
-      VpcId:
-        Ref: VPC
-  SubnetPrivate1B:
-    Type: AWS::EC2::Subnet
-    Properties:
-      AvailabilityZone: !Select [ 1, !Ref AvailabilityZones ]
-      CidrBlock: !Ref PrivateSubnetCidrBlockB
-      Tags:
-      - Key: kubernetes.io/role/internal-elb
-        Value: '1'
-      - Key: Name
-        Value:
-          Fn::Sub: "${AWS::StackName}/SubnetPrivate1B"
-      VpcId:
-        Ref: VPC
-  SubnetPrivate1C3:
-    Condition: CreateThreeSubnets
-    Type: AWS::EC2::Subnet
-    Properties:
-      AvailabilityZone: !Select [ 2, !Ref AvailabilityZones ]
-      CidrBlock: !Ref PrivateSubnetCidrBlockC
-      Tags:
-      - Key: kubernetes.io/role/internal-elb
-        Value: '1'
-      - Key: Name
-        Value:
-          Fn::Sub: "${AWS::StackName}/SubnetPrivate1C"
-      VpcId:
-        Ref: VPC
-  SubnetPrivate1C:
-    Condition: CreateFourSubnets
-    Type: AWS::EC2::Subnet
-    Properties:
-      AvailabilityZone: !Select [ 2, !Ref AvailabilityZones ]
-      CidrBlock: !Ref PrivateSubnetCidrBlockC
-      Tags:
-      - Key: kubernetes.io/role/internal-elb
-        Value: '1'
-      - Key: Name
-        Value:
-          Fn::Sub: "${AWS::StackName}/SubnetPrivate1C"
-      VpcId:
-        Ref: VPC
-  SubnetPrivate1D:
-    Condition: CreateFourSubnets
-    Type: AWS::EC2::Subnet
-    Properties:
-      AvailabilityZone: !Select [ 3, !Ref AvailabilityZones ]
-      CidrBlock: !Ref PrivateSubnetCidrBlockD
-      Tags:
-      - Key: kubernetes.io/role/internal-elb
-        Value: '1'
-      - Key: Name
-        Value:
-          Fn::Sub: "${AWS::StackName}/SubnetPrivate1D"
-      VpcId:
-        Ref: VPC
-  SubnetPublic1A:
-    Type: AWS::EC2::Subnet
-    Properties:
-      AvailabilityZone: !Select [ 0, !Ref AvailabilityZones ]
-      CidrBlock: !Ref PublicSubnetCidrBlockA
-      MapPublicIpOnLaunch: true
-      Tags:
-      - Key: kubernetes.io/role/elb
-        Value: '1'
-      - Key: Name
-        Value:
-          Fn::Sub: "${AWS::StackName}/SubnetPublic1A"
-      VpcId:
-        Ref: VPC
-  SubnetPublic1B:
-    Type: AWS::EC2::Subnet
-    Properties:
-      AvailabilityZone: !Select [ 1, !Ref AvailabilityZones ]
-      CidrBlock: !Ref PublicSubnetCidrBlockB
-      MapPublicIpOnLaunch: true
-      Tags:
-      - Key: kubernetes.io/role/elb
-        Value: '1'
-      - Key: Name
-        Value:
-          Fn::Sub: "${AWS::StackName}/SubnetPublic1B"
-      VpcId:
-        Ref: VPC
-  SubnetPublic1C3:
-    Condition: CreateThreeSubnets
-    Type: AWS::EC2::Subnet
-    Properties:
-      AvailabilityZone: !Select [ 2, !Ref AvailabilityZones ]
-      CidrBlock: !Ref PublicSubnetCidrBlockC
-      MapPublicIpOnLaunch: true
-      Tags:
-      - Key: kubernetes.io/role/elb
-        Value: '1'
-      - Key: Name
-        Value:
-          Fn::Sub: "${AWS::StackName}/SubnetPublic1C"
-      VpcId:
-        Ref: VPC
-  SubnetPublic1C:
-    Condition: CreateFourSubnets
-    Type: AWS::EC2::Subnet
-    Properties:
-      AvailabilityZone: !Select [ 2, !Ref AvailabilityZones ]
-      CidrBlock: !Ref PublicSubnetCidrBlockC
-      MapPublicIpOnLaunch: true
-      Tags:
-      - Key: kubernetes.io/role/elb
-        Value: '1'
-      - Key: Name
-        Value:
-          Fn::Sub: "${AWS::StackName}/SubnetPublic1C"
-      VpcId:
-        Ref: VPC
-  SubnetPublic1D:
-    Condition: CreateFourSubnets
-    Type: AWS::EC2::Subnet
-    Properties:
-      AvailabilityZone: !Select [ 3, !Ref AvailabilityZones ]
-      CidrBlock: !Ref PublicSubnetCidrBlockD
-      MapPublicIpOnLaunch: true
-      Tags:
-      - Key: kubernetes.io/role/elb
-        Value: '1'
-      - Key: Name
-        Value:
-          Fn::Sub: "${AWS::StackName}/SubnetPublic1D"
-      VpcId:
-        Ref: VPC
-  VPC:
-    Type: AWS::EC2::VPC
-    Properties:
-      CidrBlock: !Ref VpcCidrBlock
-      EnableDnsHostnames: true
-      EnableDnsSupport: true
-      Tags:
-      - Key: Name
-        Value:
-          Fn::Sub: "${AWS::StackName}/VPC"
-  VPCGatewayAttachment:
-    Type: AWS::EC2::VPCGatewayAttachment
-    Properties:
-      InternetGatewayId:
-        Ref: InternetGateway
-      VpcId:
-        Ref: VPC
   Ec2SecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
@@ -613,6 +418,492 @@ Resources:
         - DomainName: !Ref DomainName
           HostedZoneId: !Ref HostedZoneID
       ValidationMethod: DNS
+  PrivateSubnet0:
+    Condition: AZ0
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Select [ 0, !Ref AvailabilityZones ]
+      CidrBlock: !Ref PrivateSubnet0Cidr
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: !Join [ '', [ 'PrivateSubnet0 / ', !Ref 'AWS::StackName' ] ]
+        - Key: SubnetType
+          Value: Private
+      VpcId: !Ref VPC
+  PrivateSubnet1:
+    Condition: AZ1
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Select [ 1, !Ref AvailabilityZones ]
+      CidrBlock: !Ref PrivateSubnet1Cidr
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: !Join [ '', [ 'PrivateSubnet1 / ', !Ref 'AWS::StackName' ] ]
+        - Key: SubnetType
+          Value: Private
+      VpcId: !Ref VPC
+  PrivateSubnet2:
+    Condition: AZ2
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Select [ 2, !Ref AvailabilityZones ]
+      CidrBlock: !Ref PrivateSubnet2Cidr
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: !Join [ '', [ 'PrivateSubnet2 / ', !Ref 'AWS::StackName' ] ]
+        - Key: SubnetType
+          Value: Private
+      VpcId: !Ref VPC
+  PrivateSubnet3:
+    Condition: AZ3
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Select [ 3, !Ref AvailabilityZones ]
+      CidrBlock: !Ref PrivateSubnet3Cidr
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: !Join [ '', [ 'PrivateSubnet3 / ', !Ref 'AWS::StackName' ] ]
+        - Key: SubnetType
+          Value: Private
+      VpcId: !Ref VPC
+  PrivateSubnet4:
+    Condition: AZ4
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Select [ 4, !Ref AvailabilityZones ]
+      CidrBlock: !Ref PrivateSubnet4Cidr
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: !Join [ '', [ 'PrivateSubnet4 / ', !Ref 'AWS::StackName' ] ]
+        - Key: SubnetType
+          Value: Private
+      VpcId: !Ref VPC
+  PrivateSubnet5:
+    Condition: AZ5
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Select [ 5, !Ref AvailabilityZones ]
+      CidrBlock: !Ref PrivateSubnet5Cidr
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: !Join [ '', [ 'PrivateSubnet5 / ', !Ref 'AWS::StackName' ] ]
+        - Key: SubnetType
+          Value: Private
+      VpcId: !Ref VPC
+
+  PrivateSubnetRouteTableAssociation0:
+    Condition: AZ0
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref NatRouteTable0
+      SubnetId: !Ref PrivateSubnet0
+  PrivateSubnetRouteTableAssociation1:
+    Condition: AZ1
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref NatRouteTable1
+      SubnetId: !Ref PrivateSubnet1
+  PrivateSubnetRouteTableAssociation2:
+    Condition: AZ2
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref NatRouteTable2
+      SubnetId: !Ref PrivateSubnet2
+  PrivateSubnetRouteTableAssociation3:
+    Condition: AZ3
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref NatRouteTable3
+      SubnetId: !Ref PrivateSubnet3
+  PrivateSubnetRouteTableAssociation4:
+    Condition: AZ4
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref NatRouteTable4
+      SubnetId: !Ref PrivateSubnet4
+  PrivateSubnetRouteTableAssociation5:
+    Condition: AZ5
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref NatRouteTable5
+      SubnetId: !Ref PrivateSubnet5
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Join [ '', [ 'InternetGateway / ', !Ref 'AWS::StackName' ] ]
+  AttachInternetGateway:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref InternetGateway
+      VpcId: !Ref VPC
+
+  NatEIP0:
+    Condition: AZ0
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+  NatGateway0:
+    Condition: AZ0
+    Type: AWS::EC2::NatGateway
+    DependsOn: AttachInternetGateway
+    Properties:
+      AllocationId: !GetAtt NatEIP0.AllocationId
+      SubnetId: !Ref PublicSubnet0
+  NatRoute0:
+    Condition: AZ0
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref NatRouteTable0
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NatGateway0
+  NatRouteTable0:
+    Condition: AZ0
+    Type: AWS::EC2::RouteTable
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Join [ '', ['NatRouteTable0 / ', !Ref 'AWS::StackName' ] ]
+        - Key: Network
+          Value: Public
+      VpcId: !Ref VPC
+
+  NatEIP1:
+    Condition: AZ1
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+  NatGateway1:
+    Condition: AZ1
+    Type: AWS::EC2::NatGateway
+    DependsOn: AttachInternetGateway
+    Properties:
+      AllocationId: !GetAtt NatEIP1.AllocationId
+      SubnetId: !Ref PublicSubnet1
+  NatRoute1:
+    Condition: AZ1
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref NatRouteTable1
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NatGateway1
+  NatRouteTable1:
+    Condition: AZ1
+    Type: AWS::EC2::RouteTable
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Join [ '', [ 'NatRouteTable1 / ', !Ref 'AWS::StackName' ] ]
+        - Key: Network
+          Value: Public
+      VpcId: !Ref VPC
+
+  NatEIP2:
+    Condition: AZ2
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+  NatGateway2:
+    Condition: AZ2
+    Type: AWS::EC2::NatGateway
+    DependsOn: AttachInternetGateway
+    Properties:
+      AllocationId: !GetAtt NatEIP2.AllocationId
+      SubnetId: !Ref PublicSubnet2
+  NatRoute2:
+    Condition: AZ2
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref NatRouteTable2
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NatGateway2
+  NatRouteTable2:
+    Condition: AZ2
+    Type: AWS::EC2::RouteTable
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Join [ '', [ 'NatRouteTable2 / ', !Ref 'AWS::StackName' ] ]
+        - Key: Network
+          Value: Public
+      VpcId: !Ref VPC
+
+  NatEIP3:
+    Condition: AZ3
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+  NatGateway3:
+    Condition: AZ3
+    Type: AWS::EC2::NatGateway
+    DependsOn: AttachInternetGateway
+    Properties:
+      AllocationId: !GetAtt NatEIP3.AllocationId
+      SubnetId: !Ref PublicSubnet3
+  NatRoute3:
+    Condition: AZ3
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref NatRouteTable3
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NatGateway3
+  NatRouteTable3:
+    Condition: AZ3
+    Type: AWS::EC2::RouteTable
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Join [ '', [ 'NatRouteTable3 / ', !Ref 'AWS::StackName' ] ]
+        - Key: Network
+          Value: Public
+      VpcId: !Ref VPC
+
+  NatEIP4:
+    Condition: AZ4
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+  NatGateway4:
+    Condition: AZ4
+    Type: AWS::EC2::NatGateway
+    DependsOn: AttachInternetGateway
+    Properties:
+      AllocationId: !GetAtt NatEIP4.AllocationId
+      SubnetId: !Ref PublicSubnet4
+  NatRoute4:
+    Condition: AZ4
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref NatRouteTable4
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NatGateway4
+  NatRouteTable4:
+    Condition: AZ4
+    Type: AWS::EC2::RouteTable
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Join [ '', [ 'NatRouteTable4 / ', !Ref 'AWS::StackName' ] ]
+        - Key: Network
+          Value: Public
+      VpcId: !Ref VPC
+
+  NatEIP5:
+    Condition: AZ5
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+  NatGateway5:
+    Condition: AZ5
+    Type: AWS::EC2::NatGateway
+    DependsOn: AttachInternetGateway
+    Properties:
+      AllocationId: !GetAtt NatEIP5.AllocationId
+      SubnetId: !Ref PublicSubnet5
+  NatRoute5:
+    Condition: AZ5
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref NatRouteTable5
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NatGateway5
+  NatRouteTable5:
+    Condition: AZ5
+    Type: AWS::EC2::RouteTable
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Join [ '', [ 'NatRouteTable5 / ', !Ref 'AWS::StackName' ] ]
+        - Key: Network
+          Value: Public
+      VpcId: !Ref VPC
+
+  PublicRoute:
+    Type: AWS::EC2::Route
+    DependsOn: AttachInternetGateway
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Join [ '', [ 'PublicRouteTable / ', !Ref 'AWS::StackName' ] ]
+        - Key: Network
+          Value: Public
+      VpcId: !Ref VPC
+  PublicRouteTableAssociation0:
+    Condition: AZ0
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet0
+      RouteTableId: !Ref PublicRouteTable
+  PublicRouteTableAssociation1:
+    Condition: AZ1
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet1
+      RouteTableId: !Ref PublicRouteTable
+  PublicRouteTableAssociation2:
+    Condition: AZ2
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet2
+      RouteTableId: !Ref PublicRouteTable
+  PublicRouteTableAssociation3:
+    Condition: AZ3
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet3
+      RouteTableId: !Ref PublicRouteTable
+  PublicRouteTableAssociation4:
+    Condition: AZ4
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet4
+      RouteTableId: !Ref PublicRouteTable
+  PublicRouteTableAssociation5:
+    Condition: AZ5
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet5
+      RouteTableId: !Ref PublicRouteTable            
+
+  PublicSubnet0:
+    Condition: AZ0
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Select [ 0, !Ref AvailabilityZones ]
+      CidrBlock: !Ref PublicSubnet0Cidr
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Join [ '', [ 'PublicSubnet0 / ', !Ref 'AWS::StackName' ] ]
+        - Key: SubnetType
+          Value: Public
+      VpcId: !Ref VPC
+  PublicSubnet1:
+    Condition: AZ1
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Select [ 1, !Ref AvailabilityZones ]
+      CidrBlock: !Ref PublicSubnet1Cidr
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Join [ '', [ 'PublicSubnet1 / ', !Ref 'AWS::StackName' ] ]
+        - Key: SubnetType
+          Value: Public
+      VpcId: !Ref VPC
+  PublicSubnet2:
+    Condition: AZ2
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Select [ 2, !Ref AvailabilityZones ]
+      CidrBlock: !Ref PublicSubnet2Cidr
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Join [ '', [ 'PublicSubnet2 / ', !Ref 'AWS::StackName' ] ]
+        - Key: SubnetType
+          Value: Public
+      VpcId: !Ref VPC
+  PublicSubnet3:
+    Condition: AZ3
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Select [ 3, !Ref AvailabilityZones ]
+      CidrBlock: !Ref PublicSubnet3Cidr
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Join [ '', [ 'PublicSubnet3 / ', !Ref 'AWS::StackName' ] ]
+        - Key: SubnetType
+          Value: Public
+      VpcId: !Ref VPC
+  PublicSubnet4:
+    Condition: AZ4
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Select [ 4, !Ref AvailabilityZones ]
+      CidrBlock: !Ref PublicSubnet4Cidr
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Join [ '', [ 'PublicSubnet4 / ', !Ref 'AWS::StackName' ] ]
+        - Key: SubnetType
+          Value: Public
+      VpcId: !Ref VPC
+  PublicSubnet5:
+    Condition: AZ5
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Select [ 5, !Ref AvailabilityZones ]
+      CidrBlock: !Ref PublicSubnet5Cidr
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Join [ '', [ 'PublicSubnet5 / ', !Ref 'AWS::StackName' ] ]
+        - Key: SubnetType
+          Value: Public
+      VpcId: !Ref VPC
+
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref VpcCidr
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      Tags:
+        - Key: Name
+          Value: !Join [ '', [ 'Vpc / ', !Ref 'AWS::StackName' ] ]
+  VpcFlowLog:
+    Type: AWS::EC2::FlowLog
+    Properties:
+      DeliverLogsPermissionArn: !GetAtt VpcFlowLogsRole.Arn
+      LogGroupName: !Join [ '', [ !Ref 'AWS::StackName', '-FlowLog' ] ]
+      ResourceId: !Ref VPC
+      ResourceType: VPC
+      TrafficType: ALL
+  VpcFlowLogsLogGroup:
+    Type: AWS::Logs::LogGroup
+  VpcFlowLogsRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Action:
+              - sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service:
+                - vpc-flow-logs.amazonaws.com
+      Path: '/'
+      Policies:
+        - PolicyName: root
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:DescribeLogGroups
+                  - logs:DescribeLogStreams
+                  - logs:PutLogEvents
+                Effect: Allow
+                Resource: '*'
+
 Outputs:
   ARN:
     Export:
@@ -671,16 +962,16 @@ Outputs:
         Fn::Sub: "${AWS::StackName}::SharedNodeSecurityGroup"
     Value:
       Ref: ClusterSharedNodeSecurityGroup
-  SubnetsPrivate:
-    Export:
-      Name:
-        Fn::Sub: "${AWS::StackName}::SubnetsPrivate"
-    Value: !If [CreateFourSubnets, !Join [',', [!Ref SubnetPrivate1A, !Ref SubnetPrivate1B, !Ref SubnetPrivate1C, !Ref SubnetPrivate1D]], !If [CreateThreeSubnets, !Join [',', [!Ref SubnetPrivate1A, !Ref SubnetPrivate1B, !Ref SubnetPrivate1C3]], !Join [',', [!Ref SubnetPrivate1A, !Ref SubnetPrivate1B]]] ]
-  SubnetsPublic:
-    Export:
-      Name:
-        Fn::Sub: "${AWS::StackName}::SubnetsPublic"
-    Value: !If [CreateFourSubnets, !Join [',', [!Ref SubnetPublic1A, !Ref SubnetPublic1B, !Ref SubnetPublic1C, !Ref SubnetPublic1D]], !If [CreateThreeSubnets, !Join [',', [!Ref SubnetPublic1A, !Ref SubnetPublic1B, !Ref SubnetPublic1C3]], !Join [',', [!Ref SubnetPublic1A, !Ref SubnetPublic1B]]] ]
+  # SubnetsPrivate:
+  #   Export:
+  #     Name:
+  #       Fn::Sub: "${AWS::StackName}::SubnetsPrivate"
+  #   Value: !If [CreateFourSubnets, !Join [',', [!Ref PrivateSubnet0, !Ref PrivateSubnet1, !Ref PrivateSubnet2, !Ref PrivateSubnet3]], !If [AZ2, !Join [',', [!Ref PrivateSubnet0, !Ref PrivateSubnet1, !Ref PrivateSubnet2]], !Join [',', [!Ref PrivateSubnet0, !Ref PrivateSubnet1]]] ]
+  # SubnetsPublic:
+  #   Export:
+  #     Name:
+  #       Fn::Sub: "${AWS::StackName}::SubnetsPublic"
+  #   Value: !If [CreateFourSubnets, !Join [',', [!Ref PublicSubnet0, !Ref PublicSubnet1, !Ref PublicSubnet2, !Ref PublicSubnet3]], !If [AZ2, !Join [',', [!Ref PublicSubnet0, !Ref PublicSubnet1, !Ref PublicSubnet2]], !Join [',', [!Ref PublicSubnet0, !Ref PublicSubnet1]]] ]
   VPC:
     Export:
       Name:
@@ -689,3 +980,88 @@ Outputs:
       Ref: VPC
   AcmCertArn:
     Value: !Ref Certificate
+  VpcCidr:
+    Value: !Ref VpcCidr
+  PublicSubnet0:
+    Condition: AZ0
+    Value: !Ref PublicSubnet0
+  PublicSubnet1:
+    Condition: AZ1
+    Value: !Ref PublicSubnet1
+  PublicSubnet2:
+    Condition: AZ2
+    Value: !Ref PublicSubnet2
+  PublicSubnet3:
+    Condition: AZ3
+    Value: !Ref PublicSubnet3
+  PublicSubnet4:
+    Condition: AZ4
+    Value: !Ref PublicSubnet4  
+  PublicSubnet5:
+    Condition: AZ5
+    Value: !Ref PublicSubnet5
+  PrivateSubnet0:
+    Condition: AZ0
+    Value: !Ref PrivateSubnet0
+  PrivateSubnet1:
+    Condition: AZ1
+    Value: !Ref PrivateSubnet1
+  PrivateSubnet2:
+    Condition: AZ2
+    Value: !Ref PrivateSubnet2
+  PrivateSubnet3:
+    Condition: AZ3
+    Value: !Ref PrivateSubnet3
+  PrivateSubnet4:
+    Condition: AZ4
+    Value: !Ref PrivateSubnet4   
+  PrivateSubnet5:
+    Condition: AZ5
+    Value: !Ref PrivateSubnet5
+  SubnetsPrivate:
+    Value:
+      !If
+        [ NumberOfAZs1,
+        !Ref PrivateSubnet0,
+        !If
+          [ NumberOfAZs2,
+          !Join [ ',', [ !Ref PrivateSubnet0, !Ref PrivateSubnet1 ] ],
+          !If
+            [ NumberOfAZs3,
+            !Join [ ',', [ !Ref PrivateSubnet0, !Ref PrivateSubnet1, !Ref PrivateSubnet2 ] ],
+            !If
+              [ NumberOfAZs4,
+              !Join [ ',', [ !Ref PrivateSubnet0, !Ref PrivateSubnet1, !Ref PrivateSubnet2, !Ref PrivateSubnet3 ] ],
+              !If
+                [ NumberOfAZs5,
+                !Join [ ',', [ !Ref PrivateSubnet0, !Ref PrivateSubnet1, !Ref PrivateSubnet2, !Ref PrivateSubnet3, !Ref PrivateSubnet4 ] ],
+                !Join [ ',', [ !Ref PrivateSubnet0, !Ref PrivateSubnet1, !Ref PrivateSubnet2, !Ref PrivateSubnet3, !Ref PrivateSubnet4, !Ref PrivateSubnet5 ] ]
+                ]
+              ]
+            ]
+          ]
+        ] 
+  SubnetsPublic:
+    Value:
+      !If
+        [ NumberOfAZs1,
+        !Ref PublicSubnet0,
+        !If
+          [ NumberOfAZs2,
+          !Join [ ',', [ !Ref PublicSubnet0, !Ref PublicSubnet1 ] ],
+          !If
+            [ NumberOfAZs3,
+            !Join [ ',', [ !Ref PublicSubnet0, !Ref PublicSubnet1, !Ref PublicSubnet2 ] ],
+            !If
+              [ NumberOfAZs4,
+              !Join [ ',', [ !Ref PublicSubnet0, !Ref PublicSubnet1, !Ref PublicSubnet2, !Ref PublicSubnet3 ] ],
+              !If
+                [ NumberOfAZs5,
+                !Join [ ',', [ !Ref PublicSubnet0, !Ref PublicSubnet1, !Ref PublicSubnet2, !Ref PublicSubnet3, !Ref PublicSubnet4 ] ],
+                !Join [ ',', [ !Ref PublicSubnet0, !Ref PublicSubnet1, !Ref PublicSubnet2, !Ref PublicSubnet3, !Ref PublicSubnet4, !Ref PublicSubnet5 ] ]
+                ]
+              ]
+            ]
+          ]
+        ] 
+
